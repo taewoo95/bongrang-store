@@ -1,16 +1,108 @@
 import { useState } from 'react'
-import { getSales } from '../store'
-import { CalendarDays, TrendingUp } from 'lucide-react'
+import { getSales, deleteSale, updateSale, getProducts } from '../store'
+import { CalendarDays, Trash2, Edit2, X, Check } from 'lucide-react'
 
 function toDate(iso) {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
+function EditModal({ sale, onClose, onSaved }) {
+  const products = getProducts()
+  const [qty, setQty] = useState(sale.qty)
+  const [unitPrice, setUnitPrice] = useState(sale.unitPrice)
+  const [time, setTime] = useState(sale.time.slice(0, 16))
+
+  const handleSave = () => {
+    if (qty <= 0) return alert('수량은 1개 이상이어야 해요.')
+    if (unitPrice <= 0) return alert('판매가를 확인해주세요.')
+    updateSale(sale.id, {
+      qty: Number(qty),
+      unitPrice: Number(unitPrice),
+      totalPrice: Number(qty) * Number(unitPrice),
+      time: new Date(time).toISOString(),
+    })
+    onSaved()
+    onClose()
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '12px', border: '1px solid #e2e8f0',
+    borderRadius: '10px', fontSize: '15px', outline: 'none', background: '#f8fafc',
+  }
+  const labelStyle = { fontSize: '13px', color: '#64748b', marginBottom: '6px', display: 'block' }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      zIndex: 200,
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '20px 20px 0 0', padding: '24px',
+        width: '100%', maxWidth: '480px',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '17px', fontWeight: '700' }}>판매 내역 수정</h3>
+          <button onClick={onClose} style={{ background: 'none', color: '#94a3b8' }}><X size={22} /></button>
+        </div>
+
+        <div style={{ background: '#f1f5f9', borderRadius: '10px', padding: '12px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{sale.productName}</span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={labelStyle}>수량 (개)</label>
+              <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={inputStyle} min="1" />
+            </div>
+            <div>
+              <label style={labelStyle}>단가 (원)</label>
+              <input type="number" value={unitPrice} onChange={e => setUnitPrice(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>판매 시간</label>
+            <input type="datetime-local" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
+          </div>
+
+          <div style={{ background: '#eef2ff', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#64748b', fontSize: '14px' }}>수정 후 합계</span>
+            <span style={{ fontWeight: '700', color: '#6366f1', fontSize: '16px' }}>
+              {(Number(qty) * Number(unitPrice)).toLocaleString()}원
+            </span>
+          </div>
+
+          <button
+            onClick={handleSave}
+            style={{
+              background: '#6366f1', color: '#fff', borderRadius: '12px',
+              padding: '16px', fontSize: '15px', fontWeight: '700',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            }}
+          >
+            <Check size={18} /> 수정 완료
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function History() {
-  const sales = getSales()
+  const [sales, setSales] = useState(getSales)
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
+  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
+  const [editSale, setEditSale] = useState(null)
+
   const today = new Date().toISOString().slice(0, 10)
-  const [startDate, setStartDate] = useState(today)
-  const [endDate, setEndDate] = useState(today)
+  const refresh = () => setSales(getSales())
+
+  const handleDelete = (sale) => {
+    if (!confirm(`"${sale.productName}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
+    deleteSale(sale.id)
+    refresh()
+  }
 
   const filtered = sales.filter(s => {
     const d = s.time.slice(0, 10)
@@ -20,7 +112,6 @@ export default function History() {
   const totalRevenue = filtered.reduce((sum, s) => sum + s.totalPrice, 0)
   const totalProfit = filtered.reduce((sum, s) => sum + (s.totalPrice - s.costPrice * s.qty), 0)
 
-  // 날짜별 그룹
   const grouped = {}
   filtered.forEach(s => {
     const d = s.time.slice(0, 10)
@@ -36,13 +127,18 @@ export default function History() {
 
   return (
     <div style={{ padding: '20px' }}>
+      {editSale && (
+        <EditModal
+          sale={editSale}
+          onClose={() => setEditSale(null)}
+          onSaved={refresh}
+        />
+      )}
+
       <h1 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '20px' }}>판매 내역</h1>
 
       {/* 날짜 필터 */}
-      <div style={{
-        background: '#fff', borderRadius: '14px', padding: '16px',
-        marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)'
-      }}>
+      <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <CalendarDays size={16} color="#6366f1" />
           <span style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>기간 설정</span>
@@ -116,21 +212,36 @@ export default function History() {
                   <div key={s.id} style={{
                     padding: '14px 16px',
                     borderBottom: i < daySales.length - 1 ? '1px solid #f1f5f9' : 'none',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
-                        {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                        {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+                          {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                          {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                          이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                        {s.totalPrice.toLocaleString()}원
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                        이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ textAlign: 'right', marginRight: '4px' }}>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                            {s.totalPrice.toLocaleString()}원
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setEditSale(s)}
+                          style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex' }}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s)}
+                          style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -52,3 +52,39 @@ export function deductStock(productId, qty) {
     saveProducts(products)
   }
 }
+
+export function restoreStock(productId, qty) {
+  const products = getProducts()
+  const idx = products.findIndex(p => p.id === productId)
+  if (idx !== -1) {
+    products[idx].stock = (products[idx].stock || 0) + qty
+    saveProducts(products)
+  }
+}
+
+export function deleteSale(id) {
+  const sales = getSales()
+  const sale = sales.find(s => s.id === id)
+  if (sale) restoreStock(sale.productId, sale.qty)
+  saveSales(sales.filter(s => s.id !== id))
+}
+
+export function updateSale(id, data) {
+  const sales = getSales()
+  const idx = sales.findIndex(s => s.id === id)
+  if (idx === -1) return
+  const old = sales[idx]
+
+  // 재고 차이 반영 (기존 수량 복구 후 새 수량 차감)
+  if (old.productId === data.productId) {
+    const diff = data.qty - old.qty
+    if (diff > 0) deductStock(data.productId, diff)
+    else if (diff < 0) restoreStock(data.productId, -diff)
+  } else {
+    restoreStock(old.productId, old.qty)
+    deductStock(data.productId, data.qty)
+  }
+
+  sales[idx] = { ...old, ...data }
+  saveSales(sales)
+}
