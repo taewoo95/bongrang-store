@@ -18,7 +18,7 @@ export function saveSales(sales) {
 
 export function addSale(sale) {
   const sales = getSales()
-  sales.unshift({ ...sale, id: Date.now().toString() })
+  sales.unshift({ ...sale, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
   saveSales(sales)
 }
 
