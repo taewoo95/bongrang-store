@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { getProducts, getSales, exportBackup, importBackup } from '../store'
-import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload } from 'lucide-react'
+import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload, FilePlus } from 'lucide-react'
 
 export default function Dashboard({ onNavigate }) {
   const [restoreMsg, setRestoreMsg] = useState(null)
@@ -135,28 +135,53 @@ export default function Dashboard({ onNavigate }) {
             {restoreMsg}
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* 덮어쓰기 저장 */}
           <button
-            onClick={exportBackup}
+            onClick={() => exportBackup({ newFile: false })}
             style={{
-              background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px',
-              padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-              color: '#475569', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+              background: '#eef2ff', border: '1.5px solid #c7d2fe', borderRadius: '12px',
+              padding: '13px 16px', display: 'flex', alignItems: 'center', gap: '10px',
+              color: '#4338ca', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left',
             }}
           >
-            <Download size={20} color="#6366f1" />
-            백업 (저장)
+            <Download size={18} color="#6366f1" />
+            <div>
+              <div>백업 저장</div>
+              <div style={{ fontSize: '11px', color: '#6366f1', fontWeight: '400', marginTop: '1px' }}>재고관리_백업.json 으로 덮어쓰기</div>
+            </div>
           </button>
+
+          {/* 날짜별 새 파일 */}
+          <button
+            onClick={() => exportBackup({ newFile: true })}
+            style={{
+              background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px',
+              padding: '13px 16px', display: 'flex', alignItems: 'center', gap: '10px',
+              color: '#475569', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <FilePlus size={18} color="#94a3b8" />
+            <div>
+              <div>날짜별 저장</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '400', marginTop: '1px' }}>재고관리_백업_{new Date().toISOString().slice(0,10)}.json</div>
+            </div>
+          </button>
+
+          {/* 복원 */}
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px',
-              padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-              color: '#475569', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+              background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '12px',
+              padding: '13px 16px', display: 'flex', alignItems: 'center', gap: '10px',
+              color: '#166534', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left',
             }}
           >
-            <Upload size={20} color="#10b981" />
-            복원 (불러오기)
+            <Upload size={18} color="#10b981" />
+            <div>
+              <div>복원 (불러오기)</div>
+              <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '400', marginTop: '1px' }}>저장된 백업 파일에서 복원</div>
+            </div>
           </button>
         </div>
         <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />

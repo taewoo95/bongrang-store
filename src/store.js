@@ -68,7 +68,7 @@ export function deleteProduct(id) {
   saveProducts(products)
 }
 
-export function exportBackup() {
+export function exportBackup({ newFile = false } = {}) {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -80,7 +80,7 @@ export function exportBackup() {
   const a = document.createElement('a')
   const date = new Date().toISOString().slice(0, 10)
   a.href = url
-  a.download = `재고관리_백업_${date}.json`
+  a.download = newFile ? `재고관리_백업_${date}.json` : `재고관리_백업.json`
   a.click()
   URL.revokeObjectURL(url)
 }
