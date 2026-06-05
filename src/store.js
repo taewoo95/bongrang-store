@@ -1,5 +1,29 @@
 // localStorage 기반 데이터 저장소
 
+export function getCategories() {
+  return JSON.parse(localStorage.getItem('categories') || '[]')
+}
+
+export function saveCategories(categories) {
+  localStorage.setItem('categories', JSON.stringify(categories))
+}
+
+export function addCategory(name) {
+  const categories = getCategories()
+  if (categories.find(c => c.name === name)) throw new Error('이미 있는 카테고리예요.')
+  const newCat = { id: `${Date.now()}-${Math.random().toString(36).slice(2,5)}`, name }
+  categories.push(newCat)
+  saveCategories(categories)
+  return newCat
+}
+
+export function deleteCategory(id) {
+  // 해당 카테고리 소속 상품은 카테고리 없음으로 초기화
+  const products = getProducts().map(p => p.categoryId === id ? { ...p, categoryId: null } : p)
+  saveProducts(products)
+  saveCategories(getCategories().filter(c => c.id !== id))
+}
+
 export function getProducts() {
   return JSON.parse(localStorage.getItem('products') || '[]')
 }
