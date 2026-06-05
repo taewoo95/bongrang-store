@@ -1,0 +1,145 @@
+import { getProducts, getSales } from '../store'
+import { AlertTriangle, TrendingUp, ShoppingBag, Package } from 'lucide-react'
+
+export default function Dashboard({ onNavigate }) {
+  const products = getProducts()
+  const sales = getSales()
+
+  const today = new Date().toDateString()
+  const todaySales = sales.filter(s => new Date(s.time).toDateString() === today)
+  const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalPrice, 0)
+  const todayProfit = todaySales.reduce((sum, s) => sum + (s.totalPrice - s.costPrice * s.qty), 0)
+
+  const lowStock = products.filter(p => p.stock <= p.lowStockAlert && p.lowStockAlert > 0)
+
+  const card = (style) => ({
+    background: '#fff', borderRadius: '16px', padding: '20px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.07)', ...style
+  })
+
+  return (
+    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b' }}>재고관리</h1>
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
+          {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+        </p>
+      </div>
+
+      {/* 오늘 요약 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={card({ background: '#6366f1' })}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <ShoppingBag size={16} color="rgba(255,255,255,0.8)" />
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>오늘 매출</span>
+          </div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>
+            {todayRevenue.toLocaleString()}원
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+            {todaySales.length}건 판매
+          </div>
+        </div>
+
+        <div style={card({ background: '#10b981' })}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <TrendingUp size={16} color="rgba(255,255,255,0.8)" />
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>오늘 이익</span>
+          </div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>
+            {todayProfit.toLocaleString()}원
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+            이익률 {todayRevenue > 0 ? Math.round(todayProfit / todayRevenue * 100) : 0}%
+          </div>
+        </div>
+      </div>
+
+      {/* 재고 부족 알림 */}
+      {lowStock.length > 0 && (
+        <div style={{ ...card(), border: '1px solid #fde68a', background: '#fffbeb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <AlertTriangle size={18} color="#f59e0b" />
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>
+              재고 부족 알림 ({lowStock.length}개 상품)
+            </span>
+          </div>
+          {lowStock.map(p => (
+            <div key={p.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 0', borderBottom: '1px solid #fde68a'
+            }}>
+              <span style={{ fontSize: '14px', color: '#78350f' }}>{p.name}</span>
+              <span style={{
+                fontSize: '13px', fontWeight: '600', color: '#ef4444',
+                background: '#fee2e2', padding: '2px 8px', borderRadius: '20px'
+              }}>
+                {p.stock}개 남음
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 빠른 이동 버튼 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <button
+          onClick={() => onNavigate('sale')}
+          style={{
+            ...card(), border: '2px solid #6366f1', color: '#6366f1',
+            fontSize: '15px', fontWeight: '600', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '16px'
+          }}
+        >
+          <ShoppingBag size={18} />
+          판매 입력
+        </button>
+        <button
+          onClick={() => onNavigate('products')}
+          style={{
+            ...card(), border: '2px solid #e2e8f0', color: '#475569',
+            fontSize: '15px', fontWeight: '600', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '16px'
+          }}
+        >
+          <Package size={18} />
+          상품 관리
+        </button>
+      </div>
+
+      {/* 최근 판매 내역 */}
+      <div style={card()}>
+        <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>
+          최근 판매 내역
+        </h3>
+        {sales.length === 0 ? (
+          <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', padding: '16px 0' }}>
+            아직 판매 기록이 없어요
+          </p>
+        ) : (
+          sales.slice(0, 5).map(s => (
+            <div key={s.id} style={{
+              display: 'flex', justifyContent: 'space-between',
+              padding: '10px 0', borderBottom: '1px solid #f1f5f9'
+            }}>
+              <div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '500' }}>{s.productName}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  {new Date(s.time).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {' · '}{s.qty}개
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#6366f1' }}>
+                  {s.totalPrice.toLocaleString()}원
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
