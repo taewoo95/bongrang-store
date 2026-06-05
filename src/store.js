@@ -44,6 +44,41 @@ export function deleteProduct(id) {
   saveProducts(products)
 }
 
+export function exportBackup() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products: getProducts(),
+    sales: getSales(),
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const date = new Date().toISOString().slice(0, 10)
+  a.href = url
+  a.download = `재고관리_백업_${date}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function importBackup(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result)
+        if (!data.products || !data.sales) throw new Error('올바른 백업 파일이 아니에요.')
+        saveProducts(data.products)
+        saveSales(data.sales)
+        resolve({ products: data.products.length, sales: data.sales.length, exportedAt: data.exportedAt })
+      } catch (err) {
+        reject(err)
+      }
+    }
+    reader.readAsText(file)
+  })
+}
+
 export function deductStock(productId, qty) {
   const products = getProducts()
   const idx = products.findIndex(p => p.id === productId)

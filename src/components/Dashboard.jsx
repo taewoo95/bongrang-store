@@ -1,7 +1,25 @@
-import { getProducts, getSales } from '../store'
-import { AlertTriangle, TrendingUp, ShoppingBag, Package } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { getProducts, getSales, exportBackup, importBackup } from '../store'
+import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload } from 'lucide-react'
 
 export default function Dashboard({ onNavigate }) {
+  const [restoreMsg, setRestoreMsg] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    try {
+      const result = await importBackup(file)
+      const date = new Date(result.exportedAt).toLocaleDateString('ko-KR')
+      setRestoreMsg(`✅ 복원 완료! 상품 ${result.products}개, 판매내역 ${result.sales}건 (백업일: ${date})`)
+      setTimeout(() => { setRestoreMsg(null); window.location.reload() }, 2000)
+    } catch (err) {
+      setRestoreMsg(`❌ ${err.message}`)
+      setTimeout(() => setRestoreMsg(null), 3000)
+    }
+    e.target.value = ''
+  }
   const products = getProducts()
   const sales = getSales()
 
@@ -107,6 +125,44 @@ export default function Dashboard({ onNavigate }) {
           <Package size={18} />
           상품 관리
         </button>
+      </div>
+
+      {/* 백업 / 복원 */}
+      <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>데이터 백업 / 복원</h3>
+        {restoreMsg && (
+          <div style={{ background: restoreMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#1e293b' }}>
+            {restoreMsg}
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <button
+            onClick={exportBackup}
+            style={{
+              background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px',
+              padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+              color: '#475569', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+            }}
+          >
+            <Download size={20} color="#6366f1" />
+            백업 (저장)
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px',
+              padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+              color: '#475569', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+            }}
+          >
+            <Upload size={20} color="#10b981" />
+            복원 (불러오기)
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+        <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px', textAlign: 'center' }}>
+          백업 파일을 카카오톡·메모앱 등에 저장해두세요
+        </p>
       </div>
 
       {/* 최근 판매 내역 */}
