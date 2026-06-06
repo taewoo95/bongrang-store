@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getSales, getProducts } from '../store'
-import { TrendingUp, Award, Package, AlertCircle } from 'lucide-react'
+import { TrendingUp, Award, Package, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const SORT_OPTIONS = [
   { key: 'revenue', label: '매출순' },
@@ -17,6 +17,7 @@ export default function Analysis() {
   const [startDate, setStartDate] = useState(firstOfMonth)
   const [endDate, setEndDate] = useState(today)
   const [sortKey, setSortKey] = useState('revenue')
+  const [showNeverSold, setShowNeverSold] = useState(false)
 
   const filtered = sales.filter(s => {
     const d = s.time.slice(0, 10)
@@ -160,20 +161,31 @@ export default function Analysis() {
             {/* 안 팔린 상품 */}
             {neverSold.length > 0 && (
               <div>
-                <p style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginBottom: '8px' }}>
-                  <AlertCircle size={13} style={{ display: 'inline', marginRight: '4px' }} color="#f59e0b" />
-                  이 기간 동안 판매 없는 상품
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {neverSold.map(p => (
-                    <span key={p.id} style={{
-                      background: '#fef3c7', color: '#92400e', borderRadius: '20px',
-                      padding: '4px 12px', fontSize: '13px',
-                    }}>
-                      {p.name}
+                <button
+                  onClick={() => setShowNeverSold(v => !v)}
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', padding: '4px 0' }}
+                >
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <AlertCircle size={13} color="#f59e0b" />
+                    이 기간 판매 없는 상품
+                    <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: '20px', padding: '1px 8px', fontSize: '12px', fontWeight: '700' }}>
+                      {neverSold.length}
                     </span>
-                  ))}
-                </div>
+                  </span>
+                  {showNeverSold ? <ChevronUp size={15} color="#94a3b8" /> : <ChevronDown size={15} color="#94a3b8" />}
+                </button>
+                {showNeverSold && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                    {neverSold.map(p => (
+                      <span key={p.id} style={{
+                        background: '#fef3c7', color: '#92400e', borderRadius: '20px',
+                        padding: '4px 12px', fontSize: '13px',
+                      }}>
+                        {p.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>
