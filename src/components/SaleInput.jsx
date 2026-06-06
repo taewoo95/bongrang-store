@@ -19,6 +19,7 @@ export default function SaleInput({ onDone }) {
   const [expandProduct, setExpandProduct] = useState(true)
   const [activeCat, setActiveCat] = useState('all')
   const [showScanner, setShowScanner] = useState(false)
+  const [cartExpanded, setCartExpanded] = useState(false)
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -316,21 +317,62 @@ export default function SaleInput({ onDone }) {
       {cart.length > 0 && (
         <div style={{
           position: 'fixed', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: '480px', padding: '12px 20px',
-          background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)',
+          width: '100%', maxWidth: '480px',
+          background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)',
           borderTop: '1px solid #e2e8f0', zIndex: 50,
         }}>
-          <button
-            onClick={handleSell}
-            style={{
-              width: '100%', background: '#6366f1', color: '#fff', borderRadius: '14px',
-              padding: '16px', fontSize: '16px', fontWeight: '700',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            }}
-          >
-            <ShoppingCart size={20} />
-            {cart.length}종 {totalItems}개 · {totalAmount.toLocaleString()}원 판매 완료
-          </button>
+          {/* 펼쳐진 장바구니 목록 */}
+          {cartExpanded && (
+            <div style={{ borderBottom: '1px solid #e2e8f0', maxHeight: '40vh', overflowY: 'auto' }}>
+              {cart.map((c, i) => (
+                <div key={c.product.id} style={{
+                  padding: '12px 20px',
+                  borderBottom: i < cart.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', flex: 1 }}>{c.product.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px' }}>
+                      <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Minus size={13} /></button>
+                      <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
+                      <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Plus size={13} /></button>
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6366f1', minWidth: '64px', textAlign: 'right' }}>
+                      {(c.unitPrice * c.qty).toLocaleString()}원
+                    </span>
+                    <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', padding: '2px' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 요약 바 + 판매 완료 버튼 */}
+          <div style={{ padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCartExpanded(v => !v)}
+              style={{
+                background: '#f1f5f9', borderRadius: '12px', padding: '12px 14px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', flexShrink: 0,
+              }}
+            >
+              <ChevronUp size={16} color="#6366f1" style={{ transform: cartExpanded ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }} />
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#6366f1' }}>{totalItems}개</span>
+            </button>
+            <button
+              onClick={handleSell}
+              style={{
+                flex: 1, background: '#6366f1', color: '#fff', borderRadius: '12px',
+                padding: '14px', fontSize: '15px', fontWeight: '700',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              <ShoppingCart size={18} />
+              {totalAmount.toLocaleString()}원 판매 완료
+            </button>
+          </div>
         </div>
       )}
     </div>
