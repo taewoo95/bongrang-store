@@ -70,49 +70,53 @@ export function QRViewModal({ product, onClose }) {
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
 export function QRScanModal({ onScanned, onClose }) {
   const [error, setError] = useState(null)
+  const mountedRef = useRef(true)
   const scannerRef = useRef(null)
-  const doneRef = useRef(false)  // 중복 처리 방지
   const containerId = 'qr-scan-container'
 
   useEffect(() => {
-    let scanner = null
+    mountedRef.current = true
 
     const start = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode')
-        scanner = new Html5Qrcode(containerId)
+
+        // import 완료 전에 이미 닫혔으면 아무것도 하지 않음
+        if (!mountedRef.current) return
+
+        const scanner = new Html5Qrcode(containerId)
         scannerRef.current = scanner
 
         await scanner.start(
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
-            if (doneRef.current) return
+            if (!mountedRef.current) return
             if (decodedText.startsWith('inv-product:')) {
-              doneRef.current = true
               const productId = decodedText.replace('inv-product:', '')
-              onScanned(productId)
+              mountedRef.current = false
+              scanner.stop().catch(() => {}).finally(() => onScanned(productId))
             }
           },
           () => {}
         )
       } catch (e) {
-        setError('카메라를 사용할 수 없어요. 권한을 허용해주세요.')
+        if (mountedRef.current) setError('카메라를 사용할 수 없어요. 권한을 허용해주세요.')
       }
     }
 
     start()
 
-    // 컴포넌트 unmount 시 스캐너 정리 (여기서만 stop 호출)
     return () => {
+      mountedRef.current = false
+      const scanner = scannerRef.current
       if (scanner) {
+        scannerRef.current = null
         scanner.stop().catch(() => {})
-        scanner.clear()
       }
     }
   }, [])
 
-  // 닫기는 onClose만 호출 → unmount → useEffect cleanup에서 scanner 정리
   const handleClose = () => onClose()
 
   return (
