@@ -16,6 +16,9 @@ function EditModal({ sale, onClose, onSaved }) {
     if (qty <= 0) return alert('수량은 1개 이상이어야 해요.')
     if (unitPrice <= 0) return alert('판매가를 확인해주세요.')
     updateSale(sale.id, {
+      productId: sale.productId,
+      productName: sale.productName,
+      costPrice: sale.costPrice,
       qty: Number(qty),
       unitPrice: Number(unitPrice),
       totalPrice: Number(qty) * Number(unitPrice),

@@ -138,16 +138,19 @@ export function updateSale(id, data) {
   if (idx === -1) return
   const old = sales[idx]
 
-  // 재고 차이 반영 (기존 수량 복구 후 새 수량 차감)
-  if (old.productId === data.productId) {
-    const diff = data.qty - old.qty
-    if (diff > 0) deductStock(data.productId, diff)
-    else if (diff < 0) restoreStock(data.productId, -diff)
+  const productId = data.productId ?? old.productId
+
+  if (productId === old.productId) {
+    // 같은 상품: 수량 차이만 재고 반영
+    const diff = (data.qty ?? old.qty) - old.qty
+    if (diff > 0) deductStock(productId, diff)
+    else if (diff < 0) restoreStock(productId, -diff)
   } else {
+    // 상품 변경: 기존 재고 복구 후 새 상품 차감
     restoreStock(old.productId, old.qty)
-    deductStock(data.productId, data.qty)
+    deductStock(productId, data.qty ?? old.qty)
   }
 
-  sales[idx] = { ...old, ...data }
+  sales[idx] = { ...old, ...data, productId }
   saveSales(sales)
 }
