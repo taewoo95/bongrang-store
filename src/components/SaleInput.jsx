@@ -358,7 +358,7 @@ export default function SaleInput({ onDone }) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', flexShrink: 0,
               }}
             >
-              <ChevronUp size={16} color="#6366f1" style={{ transform: cartExpanded ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }} />
+              <ChevronUp size={16} color="#6366f1" style={{ transform: cartExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
               <span style={{ fontSize: '11px', fontWeight: '700', color: '#6366f1' }}>{totalItems}개</span>
             </button>
             <button
