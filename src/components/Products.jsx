@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory } from '../store'
-import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp } from 'lucide-react'
+import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
+import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react'
 
 const EMPTY_FORM = { name: '', categoryId: '', costPrice: '', sellPrice: '', stock: '', lowStockAlert: '5' }
 
@@ -11,7 +11,6 @@ export default function Products() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [editId, setEditId] = useState(null)
   const [newCatName, setNewCatName] = useState('')
-  const [showCatForm, setShowCatForm] = useState(false)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
 
@@ -51,6 +50,15 @@ export default function Products() {
   const handleDeleteCategory = (id) => {
     if (!confirm('카테고리를 삭제하면 소속 상품의 카테고리가 해제돼요. 계속할까요?')) return
     deleteCategory(id); refresh()
+  }
+
+  const handleMoveCategory = (idx, dir) => {
+    const next = [...categories]
+    const swapIdx = idx + dir
+    if (swapIdx < 0 || swapIdx >= next.length) return
+    ;[next[idx], next[swapIdx]] = [next[swapIdx], next[idx]]
+    reorderCategories(next)
+    setCategories(next)
   }
 
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
@@ -116,42 +124,56 @@ export default function Products() {
 
       {/* 카테고리 관리 */}
       <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Tag size={15} color="#6366f1" />
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>카테고리</span>
-          </div>
-          <button onClick={() => setShowCatForm(v => !v)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '5px 10px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Plus size={13} /> 추가
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+          <Tag size={15} color="#6366f1" />
+          <span style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>카테고리</span>
+        </div>
+
+        {/* 카테고리 추가 입력 */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <input
+            value={newCatName}
+            onChange={e => setNewCatName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
+            placeholder="새 카테고리명 입력"
+            style={{ ...inputStyle, padding: '10px 12px', fontSize: '14px' }}
+          />
+          <button onClick={handleAddCategory} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '10px 14px', fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Plus size={14} /> 추가
           </button>
         </div>
 
-        {showCatForm && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <input
-              value={newCatName}
-              onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
-              placeholder="카테고리명 입력 후 엔터"
-              style={{ ...inputStyle, padding: '10px 12px', fontSize: '14px' }}
-            />
-            <button onClick={handleAddCategory} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '10px 14px', fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap' }}>
-              추가
-            </button>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {categories.map(c => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', borderRadius: '20px', padding: '5px 10px 5px 12px' }}>
-              <span style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>{c.name}</span>
-              <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '2px' }}>({products.filter(p => p.categoryId === c.id).length})</span>
-              <button onClick={() => handleDeleteCategory(c.id)} style={{ background: 'none', color: '#cbd5e1', marginLeft: '2px', display: 'flex', padding: '2px' }}>
-                <X size={12} />
+        {/* 카테고리 목록 (순서 변경 포함) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
+          {categories.map((c, idx) => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', borderRadius: '10px', padding: '8px 10px', border: '1px solid #e2e8f0' }}>
+              {/* 순서 변경 버튼 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <button
+                  onClick={() => handleMoveCategory(idx, -1)}
+                  disabled={idx === 0}
+                  style={{ background: 'none', color: idx === 0 ? '#e2e8f0' : '#94a3b8', padding: '1px', display: 'flex', cursor: idx === 0 ? 'default' : 'pointer' }}
+                >
+                  <ArrowUp size={12} />
+                </button>
+                <button
+                  onClick={() => handleMoveCategory(idx, 1)}
+                  disabled={idx === categories.length - 1}
+                  style={{ background: 'none', color: idx === categories.length - 1 ? '#e2e8f0' : '#94a3b8', padding: '1px', display: 'flex', cursor: idx === categories.length - 1 ? 'default' : 'pointer' }}
+                >
+                  <ArrowDown size={12} />
+                </button>
+              </div>
+              <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
+                {products.filter(p => p.categoryId === c.id).length}개
+              </span>
+              <button onClick={() => handleDeleteCategory(c.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '6px', padding: '4px 6px', display: 'flex', alignItems: 'center' }}>
+                <Trash2 size={12} />
               </button>
             </div>
           ))}
-          {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
         </div>
       </div>
 

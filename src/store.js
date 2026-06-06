@@ -17,6 +17,10 @@ export function addCategory(name) {
   return newCat
 }
 
+export function reorderCategories(categories) {
+  saveCategories(categories)
+}
+
 export function deleteCategory(id) {
   // 해당 카테고리 소속 상품은 카테고리 없음으로 초기화
   const products = getProducts().map(p => p.categoryId === id ? { ...p, categoryId: null } : p)

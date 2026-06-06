@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { getProducts, addSale, deductStock } from '../store'
+import { getProducts, getCategories, addSale, deductStock } from '../store'
 import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function SaleInput({ onDone }) {
   const [products] = useState(getProducts)
+  const [categories] = useState(getCategories)
   const [cart, setCart] = useState([]) // [{ product, qty, unitPrice }]
   const [done, setDone] = useState(false)
   const [expandProduct, setExpandProduct] = useState(true)
+  const [activeCat, setActiveCat] = useState('all')
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -38,6 +40,40 @@ export default function SaleInput({ onDone }) {
 
   const totalAmount = cart.reduce((sum, c) => sum + c.unitPrice * c.qty, 0)
   const totalItems = cart.reduce((sum, c) => sum + c.qty, 0)
+
+  const ProductButton = ({ p }) => {
+    const inCart = cart.find(c => c.product.id === p.id)
+    return (
+      <button
+        onClick={() => addToCart(p)}
+        style={{
+          background: inCart ? '#eef2ff' : '#fff',
+          border: inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
+          borderRadius: '12px', padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{p.name}</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>재고 {p.stock}개</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {inCart && (
+            <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>
+              {inCart.qty}개
+            </span>
+          )}
+          <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</span>
+          <div style={{
+            width: '28px', height: '28px', background: inCart ? '#6366f1' : '#f1f5f9',
+            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Plus size={16} color={inCart ? '#fff' : '#94a3b8'} />
+          </div>
+        </div>
+      </button>
+    )
+  }
 
   const handleSell = () => {
     if (cart.length === 0) return alert('판매할 상품을 담아주세요.')
@@ -196,42 +232,68 @@ export default function SaleInput({ onDone }) {
               등록된 상품이 없어요. 먼저 상품 탭에서 추가해주세요.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {products.map(p => {
-                const inCart = cart.find(c => c.product.id === p.id)
-                return (
+            <>
+              {/* 카테고리 필터 탭 */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px' }}>
+                {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
                   <button
-                    key={p.id}
-                    onClick={() => addToCart(p)}
+                    key={c.id}
+                    onClick={() => setActiveCat(c.id)}
                     style={{
-                      background: inCart ? '#eef2ff' : '#fff',
-                      border: inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
-                      borderRadius: '12px', padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
+                      background: activeCat === c.id ? '#6366f1' : '#fff',
+                      color: activeCat === c.id ? '#fff' : '#64748b',
+                      border: activeCat === c.id ? 'none' : '1px solid #e2e8f0',
+                      boxShadow: activeCat === c.id ? '0 2px 6px rgba(99,102,241,0.3)' : 'none',
                     }}
                   >
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{p.name}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>재고 {p.stock}개</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {inCart && (
-                        <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>
-                          {inCart.qty}개
-                        </span>
-                      )}
-                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</span>
-                      <div style={{
-                        width: '28px', height: '28px', background: inCart ? '#6366f1' : '#f1f5f9',
-                        borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Plus size={16} color={inCart ? '#fff' : '#94a3b8'} />
-                      </div>
-                    </div>
+                    {c.name}
                   </button>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+
+              {/* 카테고리별 상품 표시 */}
+              {activeCat === 'all' ? (
+                // 전체: 카테고리 섹션으로 그룹핑
+                (() => {
+                  const sections = [
+                    ...categories.map(c => ({ cat: c, items: products.filter(p => p.categoryId === c.id) })),
+                    { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId) },
+                  ].filter(s => s.items.length > 0)
+
+                  return sections.length === 0 ? null : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {sections.map(({ cat, items }) => (
+                        <div key={cat.id}>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', marginBottom: '6px', paddingLeft: '2px' }}>
+                            {cat.name} <span style={{ color: '#94a3b8', fontWeight: '400' }}>({items.length})</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {items.map(p => <ProductButton key={p.id} p={p} />)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()
+              ) : (
+                // 특정 카테고리 필터
+                (() => {
+                  const filtered = activeCat === 'none'
+                    ? products.filter(p => !p.categoryId)
+                    : products.filter(p => p.categoryId === activeCat)
+                  return filtered.length === 0 ? (
+                    <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                      이 카테고리에 상품이 없어요
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {filtered.map(p => <ProductButton key={p.id} p={p} />)}
+                    </div>
+                  )
+                })()
+              )}
+            </>
           )
         )}
       </div>
