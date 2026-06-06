@@ -4,6 +4,7 @@
  * 2026-06-06 reorderCategories 함수 추가 (카테고리 순서 변경)
  * 2026-06-06 updateSale 수정 — data.productId 누락 시 old.productId 사용하도록 방어 처리
  *            재고 조정 로직 개선: 같은 상품이면 수량 차이만큼만 반영
+ * 2026-06-06 뽑기 등수(GachaGrades) 및 뽑기 판매(GachaSales) 기능 추가
  */
 // localStorage 기반 데이터 저장소
 
@@ -137,6 +138,53 @@ export function deleteSale(id) {
   const sale = sales.find(s => s.id === id)
   if (sale) restoreStock(sale.productId, sale.qty)
   saveSales(sales.filter(s => s.id !== id))
+}
+
+// ── 뽑기 등수 ──────────────────────────────────────────────────────
+export function getGachaGrades() {
+  return JSON.parse(localStorage.getItem('gachaGrades') || '[]')
+}
+export function saveGachaGrades(grades) {
+  localStorage.setItem('gachaGrades', JSON.stringify(grades))
+}
+export function addGachaGrade({ name, allowance, price }) {
+  const grades = getGachaGrades()
+  if (grades.find(g => g.name === name)) throw new Error('이미 있는 등수예요.')
+  const g = { id: `${Date.now()}-${Math.random().toString(36).slice(2,5)}`, name, allowance: Number(allowance), price: Number(price) }
+  grades.push(g)
+  saveGachaGrades(grades)
+  return g
+}
+export function deleteGachaGrade(id) {
+  saveGachaGrades(getGachaGrades().filter(g => g.id !== id))
+}
+export function updateGachaGrade(id, data) {
+  const grades = getGachaGrades()
+  const idx = grades.findIndex(g => g.id === id)
+  if (idx !== -1) { grades[idx] = { ...grades[idx], ...data }; saveGachaGrades(grades) }
+}
+
+// ── 뽑기 판매 ──────────────────────────────────────────────────────
+// gachaSale: { id, time, gradeName, gradePrice, products: [{productId, productName, qty, costPrice}] }
+export function getGachaSales() {
+  return JSON.parse(localStorage.getItem('gachaSales') || '[]')
+}
+export function saveGachaSales(sales) {
+  localStorage.setItem('gachaSales', JSON.stringify(sales))
+}
+export function addGachaSale({ gradeName, gradePrice, products }) {
+  const sales = getGachaSales()
+  const sale = { id: `g-${Date.now()}-${Math.random().toString(36).slice(2,5)}`, time: new Date().toISOString(), gradeName, gradePrice, products }
+  sales.unshift(sale)
+  saveGachaSales(sales)
+  products.forEach(p => deductStock(p.productId, p.qty))
+  return sale
+}
+export function deleteGachaSale(id) {
+  const sales = getGachaSales()
+  const sale = sales.find(s => s.id === id)
+  if (sale) sale.products.forEach(p => restoreStock(p.productId, p.qty))
+  saveGachaSales(sales.filter(s => s.id !== id))
 }
 
 export function updateSale(id, data) {

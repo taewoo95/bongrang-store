@@ -4,9 +4,10 @@
  * 2026-06-06 상품 랭킹, 전체 요약 최초 추가
  * 2026-06-06 판매 없는 상품 접기/펼치기로 변경
  * 2026-06-06 전체 레이아웃 재구성, 카테고리별 매출 비중·시간대별 판매 분포 추가
+ * 2026-06-06 뽑기 판매 데이터를 전체 상품 분석에 통합 (별도 섹션 제거)
  */
 import { useState } from 'react'
-import { getSales, getProducts, getCategories } from '../store'
+import { getSales, getProducts, getCategories, getGachaSales } from '../store'
 import { TrendingUp, Award, AlertCircle, ChevronDown, ChevronUp, Clock, Tag } from 'lucide-react'
 
 const SORT_OPTIONS = [
@@ -33,6 +34,7 @@ const medal = i => ['🥇','🥈','🥉'][i] ?? `${i+1}`
 
 export default function Analysis() {
   const sales = getSales()
+  const gachaSales = getGachaSales()
   const products = getProducts()
   const categories = getCategories()
   const today = toLocalDate(new Date().toISOString())
@@ -49,14 +51,20 @@ export default function Analysis() {
     const d = toLocalDate(s.time)
     return d >= startDate && d <= endDate
   })
+  const filteredGacha = gachaSales.filter(s => {
+    const d = toLocalDate(s.time)
+    return d >= startDate && d <= endDate
+  })
 
-  // ── 요약 지표 ──────────────────────────────
-  const totalRevenue = filtered.reduce((s, x) => s + x.totalPrice, 0)
-  const totalCost    = filtered.reduce((s, x) => s + x.costPrice * x.qty, 0)
+  // ── 요약 지표 (뽑기 포함) ─────────────────
+  const gachaTotalRevenue = filteredGacha.reduce((s, x) => s + x.gradePrice, 0)
+  const gachaTotalCost    = filteredGacha.reduce((s, x) => s + x.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0), 0)
+  const totalRevenue = filtered.reduce((s, x) => s + x.totalPrice, 0) + gachaTotalRevenue
+  const totalCost    = filtered.reduce((s, x) => s + x.costPrice * x.qty, 0) + gachaTotalCost
   const totalProfit  = totalRevenue - totalCost
   const profitRate   = totalRevenue > 0 ? Math.round(totalProfit / totalRevenue * 100) : 0
 
-  // ── 상품별 집계 ────────────────────────────
+  // ── 상품별 집계 (뽑기 포함) ───────────────
   const byProduct = {}
   filtered.forEach(s => {
     if (!byProduct[s.productName]) byProduct[s.productName] = { revenue: 0, cost: 0, qty: 0 }
@@ -64,12 +72,26 @@ export default function Analysis() {
     byProduct[s.productName].cost    += s.costPrice * s.qty
     byProduct[s.productName].qty     += s.qty
   })
+  // 뽑기 판매: 각 상품의 원가·수량 반영, 매출은 등수 가격을 상품 원가 비율로 분배
+  filteredGacha.forEach(gs => {
+    const totalCostInGacha = gs.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)
+    gs.products.forEach(p => {
+      if (!byProduct[p.productName]) byProduct[p.productName] = { revenue: 0, cost: 0, qty: 0 }
+      byProduct[p.productName].qty  += p.qty
+      byProduct[p.productName].cost += (p.costPrice || 0) * p.qty
+      // 매출 배분: 뽑기 가격 × (해당 상품 원가 비율), 원가 합이 0이면 균등 배분
+      const share = totalCostInGacha > 0
+        ? gs.gradePrice * ((p.costPrice || 0) * p.qty / totalCostInGacha)
+        : gs.gradePrice / gs.products.length
+      byProduct[p.productName].revenue += share
+    })
+  })
   const productList = Object.entries(byProduct)
     .map(([name, d]) => ({ name, ...d, profit: d.revenue - d.cost, profitRate: d.revenue > 0 ? Math.round((d.revenue - d.cost) / d.revenue * 100) : 0 }))
     .sort((a, b) => b[sortKey] - a[sortKey])
   const maxRevenue = productList[0]?.revenue || 1
 
-  // ── 카테고리별 매출 비중 ───────────────────
+  // ── 카테고리별 매출 비중 (뽑기 포함) ────────
   const byCat = {}
   filtered.forEach(s => {
     const product = products.find(p => p.id === s.productId)
@@ -79,20 +101,42 @@ export default function Analysis() {
     byCat[catName].revenue += s.totalPrice
     byCat[catName].qty     += s.qty
   })
+  filteredGacha.forEach(gs => {
+    const totalCostInGacha = gs.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)
+    gs.products.forEach(p => {
+      const product = products.find(pr => pr.id === p.productId)
+      const catId = product?.categoryId ?? 'none'
+      const catName = catId === 'none' ? '미분류' : (categories.find(c => c.id === catId)?.name ?? '미분류')
+      if (!byCat[catName]) byCat[catName] = { revenue: 0, qty: 0 }
+      byCat[catName].qty += p.qty
+      const share = totalCostInGacha > 0
+        ? gs.gradePrice * ((p.costPrice || 0) * p.qty / totalCostInGacha)
+        : gs.gradePrice / gs.products.length
+      byCat[catName].revenue += share
+    })
+  })
   const catList = Object.entries(byCat)
     .map(([name, d]) => ({ name, ...d, pct: totalRevenue > 0 ? Math.round(d.revenue / totalRevenue * 100) : 0 }))
     .sort((a, b) => b.revenue - a.revenue)
   const CAT_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316']
 
-  // ── 시간대별 집계 ──────────────────────────
+  // ── 시간대별 집계 (뽑기 포함) ─────────────
   const timeSlotData = TIME_SLOTS.map(slot => {
     const items = filtered.filter(s => slot.hours.includes(new Date(s.time).getHours()))
-    return { ...slot, revenue: items.reduce((s,x) => s + x.totalPrice, 0), count: items.length }
+    const gachaItems = filteredGacha.filter(s => slot.hours.includes(new Date(s.time).getHours()))
+    return {
+      ...slot,
+      revenue: items.reduce((s,x) => s + x.totalPrice, 0) + gachaItems.reduce((s,x) => s + x.gradePrice, 0),
+      count: items.length + gachaItems.length,
+    }
   })
   const maxSlotRevenue = Math.max(...timeSlotData.map(s => s.revenue), 1)
 
-  // ── 판매 없는 상품 ─────────────────────────
-  const soldNames = new Set(filtered.map(s => s.productName))
+  // ── 판매 없는 상품 (뽑기 포함) ────────────
+  const soldNames = new Set([
+    ...filtered.map(s => s.productName),
+    ...filteredGacha.flatMap(gs => gs.products.map(p => p.productName)),
+  ])
   const neverSold = products.filter(p => !soldNames.has(p.name))
   const top3Revenue = [...productList].sort((a,b) => b.revenue - a.revenue).slice(0, 3)
   const top3Profit  = [...productList].sort((a,b) => b.profitRate - a.profitRate).slice(0, 3)
@@ -150,7 +194,7 @@ export default function Analysis() {
 
       {/* 요약 카드 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        {card('#6366f1', '총 매출', `${totalRevenue.toLocaleString()}원`, `${filtered.length}건 판매`)}
+        {card('#6366f1', '총 매출', `${totalRevenue.toLocaleString()}원`, `${filtered.length + filteredGacha.length}건 판매`)}
         {card('#f59e0b', '총 원가', `${totalCost.toLocaleString()}원`, '매입 비용 합계')}
         {card(totalProfit >= 0 ? '#10b981' : '#ef4444', '총 이익', `${totalProfit.toLocaleString()}원`, `이익률 ${profitRate}%`)}
         <div style={{ background: totalProfit >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -183,7 +227,7 @@ export default function Analysis() {
 
       {/* 시간대별 판매 분포 */}
       <Section icon={<Clock size={17} color="#6366f1" />} title="시간대별 판매 분포">
-        {filtered.length === 0 ? noData : (
+        {filtered.length === 0 && filteredGacha.length === 0 ? noData : (
           <>
             {/* 4구간 막대 */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: selectedSlot ? '14px' : '0' }}>
@@ -218,7 +262,12 @@ export default function Analysis() {
             {selectedSlot && (() => {
               const hourlyData = selectedSlot.hours.map(h => {
                 const items = filtered.filter(s => new Date(s.time).getHours() === h)
-                return { h, revenue: items.reduce((s,x) => s+x.totalPrice, 0), count: items.length }
+                const gItems = filteredGacha.filter(s => new Date(s.time).getHours() === h)
+                return {
+                  h,
+                  revenue: items.reduce((s,x) => s+x.totalPrice, 0) + gItems.reduce((s,x) => s+x.gradePrice, 0),
+                  count: items.length + gItems.length,
+                }
               })
               const maxH = Math.max(...hourlyData.map(d => d.revenue), 1)
               return (
@@ -302,7 +351,7 @@ export default function Analysis() {
 
       {/* 전체 요약 */}
       <Section icon={<Award size={17} color="#f59e0b" />} title="기간 요약">
-        {filtered.length === 0 ? noData : (
+        {filtered.length === 0 && filteredGacha.length === 0 ? noData : (
           <>
             <div style={{ marginBottom: '16px' }}>
               <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏆 매출 TOP 3</p>

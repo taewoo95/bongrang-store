@@ -4,9 +4,10 @@
  * 2026-06-06 판매 내역 수정 시 productId 누락으로 목록 삭제 및 재고 오동작 버그 수정
  * 2026-06-06 수정 모달 시간 입력 timezone 버그 수정 (UTC 문자열 → 로컬 시간 변환)
  * 2026-06-06 날짜 필터 및 그룹핑 로컬 날짜 기준으로 교정 (UTC 날짜 비교 오류 해결)
+ * 2026-06-06 뽑기 판매 내역 통합 표시 (뽑기 배지, 등수명, 매출 = 등수 가격)
  */
 import { useState } from 'react'
-import { getSales, deleteSale, updateSale, getProducts } from '../store'
+import { getSales, deleteSale, updateSale, getProducts, getGachaSales, deleteGachaSale } from '../store'
 import { CalendarDays, Trash2, Edit2, X, Check } from 'lucide-react'
 
 function toDate(iso) {
@@ -113,12 +114,13 @@ function EditModal({ sale, onClose, onSaved }) {
 
 export default function History() {
   const [sales, setSales] = useState(getSales)
+  const [gachaSales, setGachaSales] = useState(getGachaSales)
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [editSale, setEditSale] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
-  const refresh = () => setSales(getSales())
+  const refresh = () => { setSales(getSales()); setGachaSales(getGachaSales()) }
 
   const handleDelete = (sale) => {
     if (!confirm(`"${sale.productName}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
@@ -126,13 +128,32 @@ export default function History() {
     refresh()
   }
 
-  const filtered = sales.filter(s => {
+  const handleDeleteGacha = (gs) => {
+    const names = gs.products.map(p => `${p.productName} ${p.qty}개`).join(', ')
+    if (!confirm(`뽑기 판매(${gs.gradeName}) 기록을 취소할까요?\n재고 복구: ${names}`)) return
+    deleteGachaSale(gs.id)
+    refresh()
+  }
+
+  const filteredNormal = sales.filter(s => {
+    const d = toLocalDate(s.time)
+    return d >= startDate && d <= endDate
+  })
+  const filteredGacha = gachaSales.filter(s => {
     const d = toLocalDate(s.time)
     return d >= startDate && d <= endDate
   })
 
-  const totalRevenue = filtered.reduce((sum, s) => sum + s.totalPrice, 0)
-  const totalProfit = filtered.reduce((sum, s) => sum + (s.totalPrice - s.costPrice * s.qty), 0)
+  // merge and tag: normal sales get type:'normal', gacha get type:'gacha'
+  const filtered = [
+    ...filteredNormal.map(s => ({ ...s, _type: 'normal' })),
+    ...filteredGacha.map(s => ({ ...s, _type: 'gacha' })),
+  ].sort((a, b) => new Date(b.time) - new Date(a.time))
+
+  const totalRevenue = filteredNormal.reduce((sum, s) => sum + s.totalPrice, 0)
+    + filteredGacha.reduce((sum, s) => sum + s.gradePrice, 0)
+  const totalProfit = filteredNormal.reduce((sum, s) => sum + (s.totalPrice - s.costPrice * s.qty), 0)
+    + filteredGacha.reduce((sum, gs) => sum + gs.gradePrice - gs.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0), 0)
 
   const grouped = {}
   filtered.forEach(s => {
@@ -140,6 +161,7 @@ export default function History() {
     if (!grouped[d]) grouped[d] = []
     grouped[d].push(s)
   })
+  const totalCount = filteredNormal.length + filteredGacha.length
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
 
   const inputStyle = {
@@ -199,7 +221,7 @@ export default function History() {
         <div style={{ background: '#6366f1', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 매출</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{totalRevenue.toLocaleString()}원</div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{filtered.length}건</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{totalCount}건</div>
         </div>
         <div style={{ background: '#10b981', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 이익</div>
@@ -211,14 +233,14 @@ export default function History() {
       </div>
 
       {/* 날짜별 내역 */}
-      {filtered.length === 0 ? (
+      {totalCount === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
           <p>해당 기간에 판매 내역이 없어요</p>
         </div>
       ) : (
         sortedDates.map(date => {
           const daySales = grouped[date]
-          const dayTotal = daySales.reduce((sum, s) => sum + s.totalPrice, 0)
+          const dayTotal = daySales.reduce((sum, s) => sum + (s._type === 'gacha' ? s.gradePrice : s.totalPrice), 0)
           return (
             <div key={date} style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -235,37 +257,70 @@ export default function History() {
                     padding: '14px 16px',
                     borderBottom: i < daySales.length - 1 ? '1px solid #f1f5f9' : 'none',
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
-                          {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                          {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                          이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ textAlign: 'right', marginRight: '4px' }}>
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                            {s.totalPrice.toLocaleString()}원
+                    {s._type === 'gacha' ? (
+                      /* 뽑기 판매 행 */
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                            <span style={{ background: '#818cf8', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>뽑기</span>
+                            <span style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.gradeName}</span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                            {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            {' · '}{s.products.map(p => `${p.productName} ${p.qty}개`).join(', ')}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                            이익 {(s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)).toLocaleString()}원
                           </div>
                         </div>
-                        <button
-                          onClick={() => setEditSale(s)}
-                          style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex' }}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s)}
-                          style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ textAlign: 'right', marginRight: '4px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                              {s.gradePrice.toLocaleString()}원
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteGacha(s)}
+                            style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      /* 일반 판매 행 */
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+                            {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                            이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ textAlign: 'right', marginRight: '4px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                              {s.totalPrice.toLocaleString()}원
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setEditSale(s)}
+                            style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex' }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(s)}
+                            style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
