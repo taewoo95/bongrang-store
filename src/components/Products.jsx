@@ -32,6 +32,16 @@ export default function Products() {
 
   const handleSubmit = () => {
     if (!form.name || !form.sellPrice) return alert('상품명과 판매가는 필수입니다.')
+    const categoryId = form.categoryId || null
+    const duplicate = products.find(p =>
+      p.name.trim() === form.name.trim() &&
+      p.categoryId === categoryId &&
+      p.id !== editId
+    )
+    if (duplicate) {
+      const catName = categoryId ? categories.find(c => c.id === categoryId)?.name : '미분류'
+      return alert(`"${form.name}" 상품이 [${catName}] 카테고리에 이미 있어요.`)
+    }
     const data = {
       name: form.name,
       categoryId: form.categoryId || null,
