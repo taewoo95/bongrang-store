@@ -6,11 +6,23 @@ function toDate(iso) {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
+function toLocalDate(iso) {
+  const d = new Date(iso)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function toLocalDateTimeInput(iso) {
+  const d = new Date(iso)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function EditModal({ sale, onClose, onSaved }) {
   const products = getProducts()
   const [qty, setQty] = useState(sale.qty)
   const [unitPrice, setUnitPrice] = useState(sale.unitPrice)
-  const [time, setTime] = useState(sale.time.slice(0, 16))
+  const [time, setTime] = useState(() => toLocalDateTimeInput(sale.time))
 
   const handleSave = () => {
     if (qty <= 0) return alert('수량은 1개 이상이어야 해요.')
@@ -108,7 +120,7 @@ export default function History() {
   }
 
   const filtered = sales.filter(s => {
-    const d = s.time.slice(0, 10)
+    const d = toLocalDate(s.time)
     return d >= startDate && d <= endDate
   })
 
@@ -117,7 +129,7 @@ export default function History() {
 
   const grouped = {}
   filtered.forEach(s => {
-    const d = s.time.slice(0, 10)
+    const d = toLocalDate(s.time)
     if (!grouped[d]) grouped[d] = []
     grouped[d].push(s)
   })
