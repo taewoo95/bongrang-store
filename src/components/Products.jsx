@@ -254,17 +254,32 @@ export default function Products() {
 
       {/* 카테고리 필터 탭 */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-        {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
-          <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
-            padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
-            background: activeCat === c.id ? '#6366f1' : '#fff',
-            color: activeCat === c.id ? '#fff' : '#64748b',
-            border: activeCat === c.id ? 'none' : '1px solid #e2e8f0',
-            boxShadow: activeCat === c.id ? '0 2px 6px rgba(99,102,241,0.3)' : 'none',
-          }}>
-            {c.name}
-          </button>
-        ))}
+        {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => {
+          const count = c.id === 'all' ? products.length
+            : c.id === 'none' ? products.filter(p => !p.categoryId).length
+            : products.filter(p => p.categoryId === c.id).length
+          const isActive = activeCat === c.id
+          return (
+            <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
+              padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
+              background: isActive ? '#6366f1' : '#fff',
+              color: isActive ? '#fff' : '#64748b',
+              border: isActive ? 'none' : '1px solid #e2e8f0',
+              boxShadow: isActive ? '0 2px 6px rgba(99,102,241,0.3)' : 'none',
+              display: 'flex', alignItems: 'center', gap: '5px',
+            }}>
+              {c.name}
+              <span style={{
+                fontSize: '11px', fontWeight: '700',
+                background: isActive ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                color: isActive ? '#fff' : '#94a3b8',
+                borderRadius: '20px', padding: '1px 6px',
+              }}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* 상품 목록 */}
