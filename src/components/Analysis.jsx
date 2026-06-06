@@ -42,6 +42,8 @@ export default function Analysis() {
   const [endDate, setEndDate] = useState(today)
   const [sortKey, setSortKey] = useState('revenue')
   const [showNeverSold, setShowNeverSold] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState(null) // 시간대 드릴다운
+  const [showAllProducts, setShowAllProducts] = useState(false)
 
   const filtered = sales.filter(s => {
     const d = toLocalDate(s.time)
@@ -182,31 +184,67 @@ export default function Analysis() {
       {/* 시간대별 판매 분포 */}
       <Section icon={<Clock size={17} color="#6366f1" />} title="시간대별 판매 분포">
         {filtered.length === 0 ? noData : (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {timeSlotData.map(slot => (
-              <div key={slot.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                {/* 막대 그래프 */}
-                <div style={{ width: '100%', height: '100px', background: '#f8fafc', borderRadius: '10px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden', padding: '0 6px 6px' }}>
-                  <div style={{
-                    width: '100%', borderRadius: '6px',
-                    background: slot.color,
-                    height: `${Math.round(slot.revenue / maxSlotRevenue * 88)}px`,
-                    minHeight: slot.revenue > 0 ? '6px' : '0',
-                    transition: 'height 0.4s',
-                    opacity: slot.revenue > 0 ? 1 : 0.2,
-                  }} />
+          <>
+            {/* 4구간 막대 */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: selectedSlot ? '14px' : '0' }}>
+              {timeSlotData.map(slot => (
+                <button
+                  key={slot.label}
+                  onClick={() => setSelectedSlot(selectedSlot?.label === slot.label ? null : slot)}
+                  style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                    background: 'none', padding: 0,
+                    opacity: selectedSlot && selectedSlot.label !== slot.label ? 0.4 : 1,
+                    transition: 'opacity 0.2s',
+                  }}
+                >
+                  <div style={{ width: '100%', height: '100px', background: '#f8fafc', borderRadius: '10px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden', padding: '0 6px 6px', border: selectedSlot?.label === slot.label ? `2px solid ${slot.color}` : '2px solid transparent' }}>
+                    <div style={{
+                      width: '100%', borderRadius: '6px', background: slot.color,
+                      height: `${Math.round(slot.revenue / maxSlotRevenue * 84)}px`,
+                      minHeight: slot.revenue > 0 ? '6px' : '0',
+                      transition: 'height 0.4s', opacity: slot.revenue > 0 ? 1 : 0.2,
+                    }} />
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{slot.label}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{slot.range}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: slot.revenue > 0 ? slot.color : '#cbd5e1' }}>{slot.count}건</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{slot.revenue > 0 ? `${slot.revenue.toLocaleString()}원` : '-'}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* 1시간 단위 드릴다운 */}
+            {selectedSlot && (() => {
+              const hourlyData = selectedSlot.hours.map(h => {
+                const items = filtered.filter(s => new Date(s.time).getHours() === h)
+                return { h, revenue: items.reduce((s,x) => s+x.totalPrice, 0), count: items.length }
+              })
+              const maxH = Math.max(...hourlyData.map(d => d.revenue), 1)
+              return (
+                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '12px' }}>
+                    {selectedSlot.label} 시간별 상세 ({selectedSlot.range})
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: '80px' }}>
+                    {hourlyData.map(({ h, revenue, count }) => (
+                      <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                        <div style={{ fontSize: '10px', color: selectedSlot.color, fontWeight: '600' }}>{count > 0 ? count : ''}</div>
+                        <div style={{
+                          width: '100%', borderRadius: '4px', background: selectedSlot.color,
+                          height: `${Math.round(revenue / maxH * 52)}px`,
+                          minHeight: revenue > 0 ? '4px' : '2px',
+                          opacity: revenue > 0 ? 1 : 0.15,
+                          transition: 'height 0.3s',
+                        }} />
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>{h}시</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{slot.label}</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{slot.range}</div>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: slot.revenue > 0 ? slot.color : '#cbd5e1' }}>
-                  {slot.count}건
-                </div>
-                <div style={{ fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
-                  {slot.revenue > 0 ? `${slot.revenue.toLocaleString()}원` : '-'}
-                </div>
-              </div>
-            ))}
-          </div>
+              )
+            })()}
+          </>
         )}
       </Section>
 
@@ -223,7 +261,7 @@ export default function Analysis() {
             </button>
           ))}
         </div>
-        {productList.length === 0 ? noData : productList.map((p, i) => (
+        {productList.length === 0 ? noData : (showAllProducts ? productList : productList.slice(0, 10)).map((p, i) => (
           <div key={p.name} style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -252,6 +290,14 @@ export default function Analysis() {
             </div>
           </div>
         ))}
+        {productList.length > 10 && (
+          <button
+            onClick={() => setShowAllProducts(v => !v)}
+            style={{ width: '100%', marginTop: '4px', padding: '10px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
+            {showAllProducts ? <><ChevronUp size={15} /> 접기</> : <><ChevronDown size={15} /> {productList.length - 10}개 더 보기</>}
+          </button>
+        )}
       </Section>
 
       {/* 전체 요약 */}
