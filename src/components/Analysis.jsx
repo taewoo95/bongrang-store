@@ -194,7 +194,7 @@ export default function Analysis() {
 
       {/* 요약 카드 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        {card('#6366f1', '총 매출', `${totalRevenue.toLocaleString()}원`, `${filtered.length + filteredGacha.length}건 판매`)}
+        {card('#6366f1', '총 매출', `${totalRevenue.toLocaleString()}원`, `일반 ${filtered.length}건 · 뽑기 ${filteredGacha.length}건`)}
         {card('#f59e0b', '총 원가', `${totalCost.toLocaleString()}원`, '매입 비용 합계')}
         {card(totalProfit >= 0 ? '#10b981' : '#ef4444', '총 이익', `${totalProfit.toLocaleString()}원`, `이익률 ${profitRate}%`)}
         <div style={{ background: totalProfit >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
