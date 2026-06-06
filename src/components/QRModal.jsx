@@ -68,12 +68,12 @@ export function QRViewModal({ product, onClose }) {
 }
 
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
-export function QRScanModal({ onScanned, onClose }) {
+export function QRScanModal({ cart, onScanned, onClose }) {
   const [error, setError] = useState(null)
-  const [lastScanned, setLastScanned] = useState(null) // { name, qty } 피드백용
+  const [lastScannedName, setLastScannedName] = useState(null)
   const mountedRef = useRef(true)
   const scannerRef = useRef(null)
-  const cooldownRef = useRef(false) // 연속 중복 인식 방지
+  const cooldownRef = useRef(false)
   const containerId = 'qr-scan-container'
 
   useEffect(() => {
@@ -95,8 +95,8 @@ export function QRScanModal({ onScanned, onClose }) {
             if (decodedText.startsWith('inv-product:')) {
               const productId = decodedText.replace('inv-product:', '')
               cooldownRef.current = true
-              const result = onScanned(productId) // { name, cartQty } 반환
-              if (mountedRef.current) setLastScanned(result)
+              const name = onScanned(productId)
+              if (mountedRef.current) setLastScannedName(name)
               // 1.5초 후 다시 스캔 가능
               setTimeout(() => { cooldownRef.current = false }, 1500)
             }
@@ -149,22 +149,53 @@ export function QRScanModal({ onScanned, onClose }) {
               </div>
             </div>
 
-            {/* 스캔 결과 피드백 */}
-            <div style={{ marginTop: '14px', minHeight: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {lastScanned ? (
-                <div style={{ background: '#d1fae5', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-                  <Check size={18} color="#10b981" />
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#065f46' }}>{lastScanned.name}</div>
-                    <div style={{ fontSize: '12px', color: '#059669' }}>장바구니 {lastScanned.cartQty}개</div>
-                  </div>
+            {/* 안내 문구 */}
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', textAlign: 'center', marginTop: '12px' }}>
+              상품 QR 코드를 네모 안에 맞춰주세요
+            </p>
+
+            {/* 장바구니 목록 */}
+            {cart.length > 0 && (
+              <div style={{ marginTop: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '14px', overflow: 'hidden' }}>
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: '700' }}>
+                    🛒 담은 상품 {cart.length}종
+                  </span>
+                  <span style={{ color: '#a5b4fc', fontSize: '13px', fontWeight: '700' }}>
+                    {cart.reduce((s, c) => s + c.unitPrice * c.qty, 0).toLocaleString()}원
+                  </span>
                 </div>
-              ) : (
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
-                  상품 QR 코드를 네모 안에 맞춰주세요
-                </p>
-              )}
-            </div>
+                <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                  {cart.map(c => (
+                    <div key={c.product.id} style={{
+                      padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      background: lastScannedName === c.product.name ? 'rgba(99,102,241,0.3)' : 'transparent',
+                      transition: 'background 0.3s',
+                    }}>
+                      <span style={{ color: '#e2e8f0', fontSize: '14px' }}>{c.product.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>
+                          {c.qty}개
+                        </span>
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                          {(c.unitPrice * c.qty).toLocaleString()}원
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 완료 버튼 */}
+            {cart.length > 0 && (
+              <button
+                onClick={handleClose}
+                style={{ marginTop: '10px', width: '100%', background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <Check size={18} /> 담기 완료 ({cart.reduce((s, c) => s + c.qty, 0)}개)
+              </button>
+            )}
           </>
         )}
       </div>
