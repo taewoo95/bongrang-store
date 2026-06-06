@@ -95,6 +95,7 @@ export function QRScanModal({ onScanned, onClose }) {
             if (decodedText.startsWith('inv-product:')) {
               const productId = decodedText.replace('inv-product:', '')
               mountedRef.current = false
+              scannerRef.current = null  // cleanup에서 중복 stop 방지
               scanner.stop().catch(() => {}).finally(() => onScanned(productId))
             }
           },
