@@ -104,7 +104,10 @@ export function QRScanModal({ cart, onScanned, onClose }) {
               const productId = code.data.replace('inv-product:', '')
               cooldownRef.current = true
               const name = onScanned(productId)
-              if (mountedRef.current && name) setLastScannedName(name)
+              if (mountedRef.current && name) {
+                setLastScannedName(name)
+                navigator.vibrate?.(60)
+              }
               setTimeout(() => { cooldownRef.current = false }, 1500)
             }
           }
