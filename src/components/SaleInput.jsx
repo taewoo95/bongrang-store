@@ -3,7 +3,7 @@ import { getProducts, getCategories, addSale, deductStock } from '../store'
 import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function SaleInput({ onDone }) {
-  const [products] = useState(getProducts)
+  const [products] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
   const [categories] = useState(getCategories)
   const [cart, setCart] = useState([]) // [{ product, qty, unitPrice }]
   const [done, setDone] = useState(false)

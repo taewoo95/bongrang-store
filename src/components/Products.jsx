@@ -5,7 +5,8 @@ import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, Chevron
 const EMPTY_FORM = { name: '', categoryId: '', costPrice: '', sellPrice: '', stock: '', lowStockAlert: '5' }
 
 export default function Products() {
-  const [products, setProducts] = useState(getProducts)
+  const sortedProducts = () => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+  const [products, setProducts] = useState(sortedProducts)
   const [categories, setCategories] = useState(getCategories)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -15,7 +16,7 @@ export default function Products() {
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
 
-  const refresh = () => { setProducts(getProducts()); setCategories(getCategories()) }
+  const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
   const handleSubmit = () => {
     if (!form.name || !form.sellPrice) return alert('상품명과 판매가는 필수입니다.')
