@@ -70,17 +70,15 @@ export function QRViewModal({ product, onClose }) {
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
 export function QRScanModal({ onScanned, onClose }) {
   const [error, setError] = useState(null)
-  const [scanning, setScanning] = useState(false)
   const scannerRef = useRef(null)
+  const doneRef = useRef(false)  // 중복 처리 방지
   const containerId = 'qr-scan-container'
 
   useEffect(() => {
     let scanner = null
-    let stopped = false
 
     const start = async () => {
       try {
-        setScanning(true)
         const { Html5Qrcode } = await import('html5-qrcode')
         scanner = new Html5Qrcode(containerId)
         scannerRef.current = scanner
@@ -89,37 +87,33 @@ export function QRScanModal({ onScanned, onClose }) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
-            if (stopped) return
+            if (doneRef.current) return
             if (decodedText.startsWith('inv-product:')) {
+              doneRef.current = true
               const productId = decodedText.replace('inv-product:', '')
-              stopped = true
-              scanner.stop().catch(() => {}).finally(() => onScanned(productId))
+              onScanned(productId)
             }
           },
           () => {}
         )
       } catch (e) {
         setError('카메라를 사용할 수 없어요. 권한을 허용해주세요.')
-        setScanning(false)
       }
     }
 
     start()
 
+    // 컴포넌트 unmount 시 스캐너 정리 (여기서만 stop 호출)
     return () => {
       if (scanner) {
         scanner.stop().catch(() => {})
+        scanner.clear()
       }
     }
   }, [])
 
-  const handleClose = () => {
-    if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {}).finally(onClose)
-    } else {
-      onClose()
-    }
-  }
+  // 닫기는 onClose만 호출 → unmount → useEffect cleanup에서 scanner 정리
+  const handleClose = () => onClose()
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
