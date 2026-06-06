@@ -58,6 +58,8 @@ export function QRViewModal({ product, onClose }) {
 export function QRScanModal({ cart, onScanned, onClose }) {
   const [error, setError] = useState(null)
   const [lastScannedName, setLastScannedName] = useState(null)
+  const [flash, setFlash] = useState(false)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -106,7 +108,12 @@ export function QRScanModal({ cart, onScanned, onClose }) {
               const name = onScanned(productId)
               if (mountedRef.current && name) {
                 setLastScannedName(name)
-                navigator.vibrate?.(60)
+                if (isIOS) {
+                  setFlash(true)
+                  setTimeout(() => setFlash(false), 150)
+                } else {
+                  navigator.vibrate?.(60)
+                }
               }
               setTimeout(() => { cooldownRef.current = false }, 1500)
             }
@@ -155,6 +162,9 @@ export function QRScanModal({ cart, onScanned, onClose }) {
           {/* 카메라 뷰 */}
           <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
           <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+          {/* iOS 번쩍 효과 */}
+          {flash && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.45)', zIndex: 5, pointerEvents: 'none' }} />}
 
           {/* 스캔 가이드 오버레이 */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
