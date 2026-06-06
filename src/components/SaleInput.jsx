@@ -160,7 +160,7 @@ export default function SaleInput({ onDone }) {
   }
 
   return (
-    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ padding: '20px', paddingBottom: cart.length > 0 ? '100px' : '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {showScanner && <QRScanModal cart={cart} onScanned={handleQRScanned} onClose={() => { setShowScanner(false) }} />}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -224,19 +224,6 @@ export default function SaleInput({ onDone }) {
               </div>
             </div>
           ))}
-          <div style={{ padding: '14px 16px' }}>
-            <button
-              onClick={handleSell}
-              style={{
-                width: '100%', background: '#6366f1', color: '#fff', borderRadius: '12px',
-                padding: '16px', fontSize: '16px', fontWeight: '700',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              }}
-            >
-              <ShoppingCart size={20} />
-              {cart.length}종 {totalItems}개 · {totalAmount.toLocaleString()}원 판매 완료
-            </button>
-          </div>
         </div>
       )}
 
@@ -324,6 +311,28 @@ export default function SaleInput({ onDone }) {
           )
         )}
       </div>
+
+      {/* 하단 고정 판매 완료 바 */}
+      {cart.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
+          width: '100%', maxWidth: '480px', padding: '12px 20px',
+          background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)',
+          borderTop: '1px solid #e2e8f0', zIndex: 50,
+        }}>
+          <button
+            onClick={handleSell}
+            style={{
+              width: '100%', background: '#6366f1', color: '#fff', borderRadius: '14px',
+              padding: '16px', fontSize: '16px', fontWeight: '700',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            }}
+          >
+            <ShoppingCart size={20} />
+            {cart.length}종 {totalItems}개 · {totalAmount.toLocaleString()}원 판매 완료
+          </button>
+        </div>
+      )}
     </div>
   )
 }
