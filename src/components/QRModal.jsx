@@ -1,3 +1,15 @@
+/*
+ * QRModal.jsx 수정 이력
+ * ─────────────────────────────────────────────
+ * 2026-06-06 QR 코드 생성(QRViewModal) 및 카메라 스캔(QRScanModal) 기능 최초 추가
+ * 2026-06-06 닫기 버튼 클릭 시 흰 화면 오류 수정 (scanner.stop() 이중 호출 방지)
+ * 2026-06-06 비동기 import 완료 전 닫을 때 unmount된 DOM에 카메라 붙는 문제 해결 (mountedRef 도입)
+ * 2026-06-06 QR 인식 성공 후 흰 화면 수정 (scannerRef.current null 처리)
+ * 2026-06-06 연속 스캔 지원: 스캔 후 모달 유지, 1.5초 쿨다운으로 중복 인식 방지
+ * 2026-06-06 스캔 모달 하단에 실시간 장바구니 목록 및 담기 완료 버튼 추가
+ * 2026-06-06 html5-qrcode → jsQR + 네이티브 getUserMedia로 교체 (흰 화면 근본 해결)
+ * 2026-06-06 스캔 성공 시 햅틱 진동 추가 (Android), iOS는 화면 번쩍 효과로 대체
+ */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { X, Download, Camera, Check } from 'lucide-react'

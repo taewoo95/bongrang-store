@@ -1,3 +1,10 @@
+/*
+ * History.jsx 수정 이력
+ * ─────────────────────────────────────────────
+ * 2026-06-06 판매 내역 수정 시 productId 누락으로 목록 삭제 및 재고 오동작 버그 수정
+ * 2026-06-06 수정 모달 시간 입력 timezone 버그 수정 (UTC 문자열 → 로컬 시간 변환)
+ * 2026-06-06 날짜 필터 및 그룹핑 로컬 날짜 기준으로 교정 (UTC 날짜 비교 오류 해결)
+ */
 import { useState } from 'react'
 import { getSales, deleteSale, updateSale, getProducts } from '../store'
 import { CalendarDays, Trash2, Edit2, X, Check } from 'lucide-react'

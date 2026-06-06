@@ -1,3 +1,11 @@
+/*
+ * SaleInput.jsx 수정 이력
+ * ─────────────────────────────────────────────
+ * 2026-06-06 상품 목록 카테고리 필터 탭 추가 (전체 / 카테고리별 / 미분류)
+ * 2026-06-06 전체 보기 시 카테고리 섹션별로 그룹핑 표시
+ * 2026-06-06 상품 목록 이름 가나다순 정렬
+ * 2026-06-06 QR 스캔 버튼 추가 — 카메라로 QR 인식 시 장바구니 자동 추가
+ */
 import { useState } from 'react'
 import { getProducts, getCategories, addSale, deductStock } from '../store'
 import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp, ScanLine } from 'lucide-react'

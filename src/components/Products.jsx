@@ -1,3 +1,13 @@
+/*
+ * Products.jsx 수정 이력
+ * ─────────────────────────────────────────────
+ * 2026-06-06 카테고리 추가 입력창 항상 표시 (토글 버튼 제거)
+ * 2026-06-06 카테고리 삭제 버튼 시각적으로 명확하게 개선 (빨간 아이콘)
+ * 2026-06-06 카테고리 순서 변경 버튼 추가 (↑ ↓)
+ * 2026-06-06 카테고리 관리 패널 접기/펼치기 토글 추가 (기본 접힘 상태)
+ * 2026-06-06 상품 목록 이름 가나다순 정렬
+ * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
+ */
 import { useState } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
 import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, ArrowUp, ArrowDown, QrCode } from 'lucide-react'

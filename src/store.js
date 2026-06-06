@@ -1,3 +1,10 @@
+/*
+ * store.js 수정 이력
+ * ─────────────────────────────────────────────
+ * 2026-06-06 reorderCategories 함수 추가 (카테고리 순서 변경)
+ * 2026-06-06 updateSale 수정 — data.productId 누락 시 old.productId 사용하도록 방어 처리
+ *            재고 조정 로직 개선: 같은 상품이면 수량 차이만큼만 반영
+ */
 // localStorage 기반 데이터 저장소
 
 export function getCategories() {
