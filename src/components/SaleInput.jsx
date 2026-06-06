@@ -41,10 +41,12 @@ export default function SaleInput({ onDone }) {
   }
 
   const handleQRScanned = (productId) => {
-    setShowScanner(false)
     const product = products.find(p => p.id === productId)
-    if (!product) return alert('등록되지 않은 상품의 QR 코드예요.')
+    if (!product) return { name: '알 수 없는 상품', cartQty: 0 }
     addToCart(product)
+    // 스캐너에 피드백 전달 (모달은 닫지 않음)
+    const cartQty = (cart.find(c => c.product.id === productId)?.qty ?? 0) + 1
+    return { name: product.name, cartQty }
   }
 
   const totalAmount = cart.reduce((sum, c) => sum + c.unitPrice * c.qty, 0)
@@ -153,7 +155,7 @@ export default function SaleInput({ onDone }) {
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {showScanner && <QRScanModal onScanned={handleQRScanned} onClose={() => setShowScanner(false)} />}
+      {showScanner && <QRScanModal onScanned={handleQRScanned} onClose={() => { setShowScanner(false) }} />}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 입력</h1>

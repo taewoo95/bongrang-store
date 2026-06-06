@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { X, Download, Camera } from 'lucide-react'
+import { X, Download, Camera, Check } from 'lucide-react'
 
 // ── QR 코드 보기 (상품 관리에서 사용) ──────────────────────────
 export function QRViewModal({ product, onClose }) {
@@ -70,8 +70,10 @@ export function QRViewModal({ product, onClose }) {
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
 export function QRScanModal({ onScanned, onClose }) {
   const [error, setError] = useState(null)
+  const [lastScanned, setLastScanned] = useState(null) // { name, qty } 피드백용
   const mountedRef = useRef(true)
   const scannerRef = useRef(null)
+  const cooldownRef = useRef(false) // 연속 중복 인식 방지
   const containerId = 'qr-scan-container'
 
   useEffect(() => {
@@ -80,8 +82,6 @@ export function QRScanModal({ onScanned, onClose }) {
     const start = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode')
-
-        // import 완료 전에 이미 닫혔으면 아무것도 하지 않음
         if (!mountedRef.current) return
 
         const scanner = new Html5Qrcode(containerId)
@@ -91,12 +91,14 @@ export function QRScanModal({ onScanned, onClose }) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
-            if (!mountedRef.current) return
+            if (!mountedRef.current || cooldownRef.current) return
             if (decodedText.startsWith('inv-product:')) {
               const productId = decodedText.replace('inv-product:', '')
-              mountedRef.current = false
-              scannerRef.current = null  // cleanup에서 중복 stop 방지
-              scanner.stop().catch(() => {}).finally(() => onScanned(productId))
+              cooldownRef.current = true
+              const result = onScanned(productId) // { name, cartQty } 반환
+              if (mountedRef.current) setLastScanned(result)
+              // 1.5초 후 다시 스캔 가능
+              setTimeout(() => { cooldownRef.current = false }, 1500)
             }
           },
           () => {}
@@ -136,22 +138,33 @@ export function QRScanModal({ onScanned, onClose }) {
         {error ? (
           <div style={{ background: '#fee2e2', borderRadius: '16px', padding: '24px', textAlign: 'center' }}>
             <p style={{ color: '#ef4444', fontSize: '15px', marginBottom: '16px' }}>{error}</p>
-            <button onClick={handleClose} style={{ background: '#ef4444', color: '#fff', borderRadius: '10px', padding: '10px 20px', fontWeight: '600' }}>
-              닫기
-            </button>
+            <button onClick={handleClose} style={{ background: '#ef4444', color: '#fff', borderRadius: '10px', padding: '10px 20px', fontWeight: '600' }}>닫기</button>
           </div>
         ) : (
           <>
             <div style={{ borderRadius: '16px', overflow: 'hidden', position: 'relative', background: '#000' }}>
               <div id={containerId} style={{ width: '100%' }} />
-              {/* 스캔 가이드 오버레이 */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '220px', height: '220px', border: '2px solid #6366f1', borderRadius: '12px', boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)' }} />
+                <div style={{ width: '220px', height: '220px', border: `2px solid ${lastScanned ? '#10b981' : '#6366f1'}`, borderRadius: '12px', boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)', transition: 'border-color 0.2s' }} />
               </div>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', fontSize: '14px', marginTop: '16px' }}>
-              상품 QR 코드를 네모 안에 맞춰주세요
-            </p>
+
+            {/* 스캔 결과 피드백 */}
+            <div style={{ marginTop: '14px', minHeight: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {lastScanned ? (
+                <div style={{ background: '#d1fae5', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                  <Check size={18} color="#10b981" />
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#065f46' }}>{lastScanned.name}</div>
+                    <div style={{ fontSize: '12px', color: '#059669' }}>장바구니 {lastScanned.cartQty}개</div>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
+                  상품 QR 코드를 네모 안에 맞춰주세요
+                </p>
+              )}
+            </div>
           </>
         )}
       </div>
