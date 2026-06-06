@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
-import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, ArrowUp, ArrowDown, QrCode } from 'lucide-react'
+import { QRViewModal } from './QRModal'
 
 const EMPTY_FORM = { name: '', categoryId: '', costPrice: '', sellPrice: '', stock: '', lowStockAlert: '5' }
 
@@ -15,6 +16,7 @@ export default function Products() {
   const [showCatPanel, setShowCatPanel] = useState(false)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
+  const [qrProduct, setQrProduct] = useState(null)
 
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
@@ -103,6 +105,7 @@ export default function Products() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '6px', marginLeft: '10px' }}>
+          <button onClick={() => setQrProduct(p)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><QrCode size={14} /></button>
           <button onClick={() => handleEdit(p)} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><Edit2 size={14} /></button>
           <button onClick={() => handleDelete(p.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><Trash2 size={14} /></button>
         </div>
@@ -112,6 +115,8 @@ export default function Products() {
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {qrProduct && <QRViewModal product={qrProduct} onClose={() => setQrProduct(null)} />}
 
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

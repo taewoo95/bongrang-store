@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getProducts, getCategories, addSale, deductStock } from '../store'
-import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp, ScanLine } from 'lucide-react'
+import { QRScanModal } from './QRModal'
 
 export default function SaleInput({ onDone }) {
   const [products] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
@@ -9,6 +10,7 @@ export default function SaleInput({ onDone }) {
   const [done, setDone] = useState(false)
   const [expandProduct, setExpandProduct] = useState(true)
   const [activeCat, setActiveCat] = useState('all')
+  const [showScanner, setShowScanner] = useState(false)
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -36,6 +38,13 @@ export default function SaleInput({ onDone }) {
     setCart(prev => prev.map(c =>
       c.product.id === productId ? { ...c, unitPrice: Number(price) || 0 } : c
     ))
+  }
+
+  const handleQRScanned = (productId) => {
+    setShowScanner(false)
+    const product = products.find(p => p.id === productId)
+    if (!product) return alert('등록되지 않은 상품의 QR 코드예요.')
+    addToCart(product)
   }
 
   const totalAmount = cart.reduce((sum, c) => sum + c.unitPrice * c.qty, 0)
@@ -144,7 +153,17 @@ export default function SaleInput({ onDone }) {
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 입력</h1>
+      {showScanner && <QRScanModal onScanned={handleQRScanned} onClose={() => setShowScanner(false)} />}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 입력</h1>
+        <button
+          onClick={() => setShowScanner(true)}
+          style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}
+        >
+          <ScanLine size={16} /> QR 스캔
+        </button>
+      </div>
 
       {/* 장바구니 */}
       {cart.length > 0 && (
