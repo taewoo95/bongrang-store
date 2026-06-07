@@ -7,7 +7,7 @@
  * 2026-06-06 판매 완료 버튼 하단 고정, 장바구니 펼치기/접기
  * 2026-06-06 뽑기 판매 모드 추가 — 등수 설정, 상품 선택, 재고·분석 연동
  */
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { getProducts, getCategories, getGachaGrades, addGachaGrade, deleteGachaGrade, updateGachaGrade, addSale, addGachaSale, deductStock } from '../store'
 import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp, ScanLine, Gift, Settings, X, Edit2 } from 'lucide-react'
 import { QRScanModal } from './QRModal'
@@ -186,8 +186,28 @@ export default function SaleInput({ onDone }) {
 
   const refreshGrades = () => setGrades(getGachaGrades())
 
+  // 상품 선택 시 스크롤 위치 보정 (장바구니 높이 변화만큼 보상)
+  const productListRef = useRef(null)
+  const prevAnchorTop = useRef(null)
+  useLayoutEffect(() => {
+    if (prevAnchorTop.current === null) return
+    const el = productListRef.current
+    if (!el) return
+    const diff = el.getBoundingClientRect().top - prevAnchorTop.current
+    if (diff === 0) return
+    let scroll = el.parentElement
+    while (scroll) {
+      if (scroll.scrollHeight > scroll.clientHeight) { scroll.scrollTop += diff; break }
+      scroll = scroll.parentElement
+    }
+    prevAnchorTop.current = null
+  }, [cart])
+
   // ── 일반 판매 로직 ─────────────────────────────────────────
   const addToCart = (product) => {
+    if (productListRef.current) {
+      prevAnchorTop.current = productListRef.current.getBoundingClientRect().top
+    }
     setCart(prev => {
       const exists = prev.find(c => c.product.id === product.id)
       if (exists) return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c)
@@ -381,7 +401,7 @@ export default function SaleInput({ onDone }) {
               ))}
             </div>
           )}
-          <div>
+          <div ref={productListRef}>
             <button onClick={() => setExpandProduct(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', padding: '4px 0', marginBottom: '10px' }}>
               <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}>상품 선택</span>
               {expandProduct ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
