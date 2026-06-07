@@ -40,7 +40,7 @@ export default function Analysis() {
   const today = toLocalDate(new Date().toISOString())
   const firstOfMonth = today.slice(0, 7) + '-01'
 
-  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
   const [sortKey, setSortKey] = useState('revenue')
   const [showNeverSold, setShowNeverSold] = useState(false)
