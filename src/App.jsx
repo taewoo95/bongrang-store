@@ -19,7 +19,7 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(70px + env(safe-area-inset-bottom))' }}>
         {tab === 'dashboard' && <Dashboard onNavigate={setTab} />}
         {tab === 'products' && <Products />}
         {tab === 'sale' && <SaleInput onDone={() => setTab('history')} />}
@@ -32,6 +32,7 @@ export default function App() {
         width: '100%', maxWidth: '480px',
         background: '#fff', borderTop: '1px solid #e2e8f0',
         display: 'flex', zIndex: 100,
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
