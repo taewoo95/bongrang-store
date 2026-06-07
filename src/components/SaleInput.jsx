@@ -124,6 +124,7 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
   if (products.length === 0) {
     return <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>등록된 상품이 없어요.</div>
   }
+  const validCatIds = new Set(categories.map(c => c.id))
   const btnProps = { isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }
   return (
     <>
@@ -139,7 +140,7 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
       {activeCat === 'all' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {[...categories.map(c => ({ cat: c, items: products.filter(p => p.categoryId === c.id) })),
-            { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId) }]
+            { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId)) }]
             .filter(s => s.items.length > 0)
             .map(({ cat, items }) => (
               <div key={cat.id}>
@@ -150,7 +151,9 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {(activeCat === 'none' ? products.filter(p => !p.categoryId) : products.filter(p => p.categoryId === activeCat))
+          {(activeCat === 'none'
+            ? products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId))
+            : products.filter(p => p.categoryId === activeCat))
             .map(p => <ProductButton key={p.id} p={p} {...btnProps} />)}
         </div>
       )}

@@ -89,15 +89,16 @@ export default function Products() {
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
 
   // 필터링된 상품
+  const validCatIds = new Set(categories.map(c => c.id))
   const filteredProducts = activeCat === 'all' ? products
-    : activeCat === 'none' ? products.filter(p => !p.categoryId)
+    : activeCat === 'none' ? products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId))
     : products.filter(p => p.categoryId === activeCat)
 
   // 카테고리별 그룹 (전체 보기일 때)
   const grouped = {}
   if (activeCat === 'all') {
     categories.forEach(c => { grouped[c.id] = { cat: c, items: products.filter(p => p.categoryId === c.id) } })
-    const uncategorized = products.filter(p => !p.categoryId)
+    const uncategorized = products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId))
     if (uncategorized.length > 0) grouped['none'] = { cat: { id: 'none', name: '미분류' }, items: uncategorized }
   }
 
