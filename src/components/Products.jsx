@@ -219,7 +219,7 @@ export default function Products() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={labelStyle}>상품명 *</label>
-                <input style={inputStyle} placeholder="예: 고양이 키링" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <input style={inputStyle} placeholder="예: 고양이 키링" value={form.name} maxLength={50} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
                 <label style={labelStyle}>카테고리</label>

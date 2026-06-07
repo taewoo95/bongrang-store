@@ -132,6 +132,7 @@ export function QRScanModal({ cart, onScanned, onClose }) {
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
             if (code && code.data.startsWith('inv-product:') && !cooldownRef.current) {
               const productId = code.data.replace('inv-product:', '')
+              if (!/^[\w-]+$/.test(productId)) return // 유효하지 않은 ID 포맷 무시
               cooldownRef.current = true
               const name = onScanned(productId)
               if (mountedRef.current && name) {

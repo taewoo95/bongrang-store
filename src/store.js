@@ -103,7 +103,8 @@ export function importBackup(file) {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result)
-        if (!data.products || !data.sales) throw new Error('올바른 백업 파일이 아니에요.')
+        if (!Array.isArray(data.products) || !Array.isArray(data.sales)) throw new Error('올바른 백업 파일이 아니에요.')
+        if (data.products.length > 50000 || data.sales.length > 500000) throw new Error('백업 파일이 너무 커요.')
         saveProducts(data.products)
         saveSales(data.sales)
         resolve({ products: data.products.length, sales: data.sales.length, exportedAt: data.exportedAt })
