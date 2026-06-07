@@ -221,7 +221,7 @@ export default function History() {
         <div style={{ background: '#6366f1', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 매출</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{totalRevenue.toLocaleString()}원</div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{totalCount}건</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>일반 {filteredNormal.length}건 · 뽑기 {filteredGacha.length}건</div>
         </div>
         <div style={{ background: '#10b981', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 이익</div>
