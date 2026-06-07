@@ -119,6 +119,7 @@ export default function History() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [editSale, setEditSale] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
   const firstOfMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-01`
@@ -325,77 +326,85 @@ export default function History() {
                 </span>
               </div>
               <div style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-                {daySales.map((s, i) => (
+                {daySales.map((s, i) => {
+                  const isOpen = expandedId === s.id
+                  return (
                   <div key={s.id} style={{
                     padding: '14px 16px',
                     borderBottom: i < daySales.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  }}>
+                    cursor: 'pointer',
+                  }} onClick={() => setExpandedId(isOpen ? null : s.id)}>
                     {s._type === 'gacha' ? (
                       /* 뽑기 판매 행 */
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                            <span style={{ background: '#818cf8', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>뽑기</span>
-                            <span style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.gradeName}</span>
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                            {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                            {' · '}{s.products.map(p => `${p.productName} ${p.qty}개`).join(', ')}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                            이익 {(s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)).toLocaleString()}원
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ textAlign: 'right', marginRight: '4px' }}>
-                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                              {s.gradePrice.toLocaleString()}원
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                              <span style={{ background: '#818cf8', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>뽑기</span>
+                              <span style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.gradeName}</span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                              {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                              {' · '}{s.products.map(p => `${p.productName} ${p.qty}개`).join(', ')}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                              이익 {(s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)).toLocaleString()}원
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteGacha(s)}
-                            style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                            {s.gradePrice.toLocaleString()}원
+                          </div>
                         </div>
+                        {isOpen && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }} onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => handleDeleteGacha(s)}
+                              style={{ flex: 1, background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
+                            >
+                              <Trash2 size={14} /> 삭제
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       /* 일반 판매 행 */
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
-                            {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                            {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                            이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ textAlign: 'right', marginRight: '4px' }}>
-                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                              {s.totalPrice.toLocaleString()}원
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+                              {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                              {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                              이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
                             </div>
                           </div>
-                          <button
-                            onClick={() => setEditSale(s)}
-                            style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex' }}
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s)}
-                            style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                            {s.totalPrice.toLocaleString()}원
+                          </div>
                         </div>
+                        {isOpen && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }} onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => setEditSale(s)}
+                              style={{ flex: 1, background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
+                            >
+                              <Edit2 size={14} /> 수정
+                            </button>
+                            <button
+                              onClick={() => handleDelete(s)}
+                              style={{ flex: 1, background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
+                            >
+                              <Trash2 size={14} /> 삭제
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )
