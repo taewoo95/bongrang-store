@@ -404,7 +404,7 @@ export default function SaleInput({ onDone }) {
             ) : (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {grades.map(g => (
-                  <button key={g.id} onClick={() => { setSelectedGrade(g); setGachaCart([]) }} style={{
+                  <button key={g.id} onClick={() => { setSelectedGrade(g); setGachaCart([]); setActiveCat('all') }} style={{
                     padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '700',
                     background: selectedGrade?.id === g.id ? '#6366f1' : '#f1f5f9',
                     color: selectedGrade?.id === g.id ? '#fff' : '#475569',
