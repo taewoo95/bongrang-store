@@ -208,40 +208,6 @@ export default function Dashboard({ onNavigate }) {
         </p>
       </div>
 
-      {/* 홈 화면에 추가 */}
-      {!isInstalled && (installPrompt || /iphone|ipad|ipod/i.test(navigator.userAgent)) && (
-        <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-          {installPrompt ? (
-            // Android Chrome: 버튼 클릭으로 바로 설치
-            <button
-              onClick={handleInstall}
-              style={{
-                width: '100%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: '#fff', borderRadius: '12px', padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left',
-              }}
-            >
-              <Smartphone size={22} />
-              <div>
-                <div style={{ fontSize: '15px', fontWeight: '700' }}>홈 화면에 앱 추가</div>
-                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>아이콘으로 바로 실행 · 오프라인 지원</div>
-              </div>
-            </button>
-          ) : (
-            // iOS Safari: 직접 설치 안내
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <Smartphone size={20} color="#6366f1" />
-                <span style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>홈 화면에 앱 추가 (iOS)</span>
-              </div>
-              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-                Safari 하단 <b>공유 버튼 →</b> <b>"홈 화면에 추가"</b> 를 탭하면 앱처럼 설치돼요.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* 최근 판매 내역 */}
       <div style={card()}>
         <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>
@@ -273,6 +239,38 @@ export default function Dashboard({ onNavigate }) {
           ))
         )}
       </div>
+
+      {/* 홈 화면에 추가 */}
+      {!isInstalled && (installPrompt || /iphone|ipad|ipod/i.test(navigator.userAgent)) && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+          {installPrompt ? (
+            <button
+              onClick={handleInstall}
+              style={{
+                width: '100%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff', borderRadius: '12px', padding: '14px 16px',
+                display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left',
+              }}
+            >
+              <Smartphone size={22} />
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: '700' }}>홈 화면에 앱 추가</div>
+                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>아이콘으로 바로 실행 · 오프라인 지원</div>
+              </div>
+            </button>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <Smartphone size={20} color="#6366f1" />
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>홈 화면에 앱 추가 (iOS)</span>
+              </div>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+                Safari 하단 <b>공유 버튼 →</b> <b>"홈 화면에 추가"</b> 를 탭하면 앱처럼 설치돼요.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
