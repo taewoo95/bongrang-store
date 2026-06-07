@@ -86,6 +86,75 @@ function GradeSettingsModal({ onClose }) {
   )
 }
 
+// ── 공통 상품 선택 UI (컴포넌트 외부 정의 — 내부 정의 시 매 렌더마다 remount) ──
+function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }) {
+  const inCart = isGacha ? gachaCart.find(c => c.product.id === p.id) : cart.find(c => c.product.id === p.id)
+  const disabled = isGacha && gachaRemaining <= 0 && !inCart
+  return (
+    <button
+      onClick={() => isGacha ? onAddGacha(p) : onAdd(p)}
+      disabled={disabled}
+      style={{
+        background: inCart ? '#eef2ff' : '#fff',
+        border: inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
+        borderRadius: '12px', padding: '14px 16px', textAlign: 'left',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        opacity: disabled ? 0.4 : 1, cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{p.name}</div>
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>재고 {p.stock}개</div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {inCart && <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>{inCart.qty}개</span>}
+        {!isGacha && <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</span>}
+        <div style={{ width: '28px', height: '28px', background: inCart ? '#6366f1' : '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={16} color={inCart ? '#fff' : '#94a3b8'} />
+        </div>
+      </div>
+    </button>
+  )
+}
+
+function ProductList({ isGacha, products, categories, activeCat, setActiveCat, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }) {
+  if (products.length === 0) {
+    return <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>등록된 상품이 없어요.</div>
+  }
+  const btnProps = { isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }
+  return (
+    <>
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px' }}>
+        {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
+          <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
+            padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
+            background: activeCat === c.id ? '#6366f1' : '#fff', color: activeCat === c.id ? '#fff' : '#64748b',
+            border: activeCat === c.id ? 'none' : '1px solid #e2e8f0',
+          }}>{c.name}</button>
+        ))}
+      </div>
+      {activeCat === 'all' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {[...categories.map(c => ({ cat: c, items: products.filter(p => p.categoryId === c.id) })),
+            { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId) }]
+            .filter(s => s.items.length > 0)
+            .map(({ cat, items }) => (
+              <div key={cat.id}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', marginBottom: '6px' }}>{cat.name} <span style={{ color: '#94a3b8', fontWeight: '400' }}>({items.length})</span></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{items.map(p => <ProductButton key={p.id} p={p} {...btnProps} />)}</div>
+              </div>
+            ))}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {(activeCat === 'none' ? products.filter(p => !p.categoryId) : products.filter(p => p.categoryId === activeCat))
+            .map(p => <ProductButton key={p.id} p={p} {...btnProps} />)}
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function SaleInput({ onDone }) {
   const [products] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
@@ -187,72 +256,6 @@ export default function SaleInput({ onDone }) {
     setGachaDone(true)
   }
 
-  // ── 공통 상품 선택 UI ────────────────────────────────────────
-  const ProductButton = ({ p, isGacha }) => {
-    const inCart = isGacha ? gachaCart.find(c => c.product.id === p.id) : cart.find(c => c.product.id === p.id)
-    const disabled = isGacha && gachaRemaining <= 0 && !inCart
-    return (
-      <button
-        onClick={() => isGacha ? addToGachaCart(p) : addToCart(p)}
-        disabled={disabled}
-        style={{
-          background: inCart ? '#eef2ff' : '#fff',
-          border: inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
-          borderRadius: '12px', padding: '14px 16px', textAlign: 'left',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          opacity: disabled ? 0.4 : 1, cursor: disabled ? 'not-allowed' : 'pointer',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{p.name}</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>재고 {p.stock}개</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {inCart && <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>{inCart.qty}개</span>}
-          {!isGacha && <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</span>}
-          <div style={{ width: '28px', height: '28px', background: inCart ? '#6366f1' : '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Plus size={16} color={inCart ? '#fff' : '#94a3b8'} />
-          </div>
-        </div>
-      </button>
-    )
-  }
-
-  const ProductList = ({ isGacha }) => (
-    products.length === 0 ? (
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>등록된 상품이 없어요.</div>
-    ) : (
-      <>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px' }}>
-          {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
-            <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
-              padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
-              background: activeCat === c.id ? '#6366f1' : '#fff', color: activeCat === c.id ? '#fff' : '#64748b',
-              border: activeCat === c.id ? 'none' : '1px solid #e2e8f0',
-            }}>{c.name}</button>
-          ))}
-        </div>
-        {activeCat === 'all' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {[...categories.map(c => ({ cat: c, items: products.filter(p => p.categoryId === c.id) })),
-              { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId) }]
-              .filter(s => s.items.length > 0)
-              .map(({ cat, items }) => (
-                <div key={cat.id}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', marginBottom: '6px' }}>{cat.name} <span style={{ color: '#94a3b8', fontWeight: '400' }}>({items.length})</span></div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{items.map(p => <ProductButton key={p.id} p={p} isGacha={isGacha} />)}</div>
-                </div>
-              ))}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {(activeCat === 'none' ? products.filter(p => !p.categoryId) : products.filter(p => p.categoryId === activeCat))
-              .map(p => <ProductButton key={p.id} p={p} isGacha={isGacha} />)}
-          </div>
-        )}
-      </>
-    )
-  )
 
   // ── 완료 화면 ───────────────────────────────────────────────
   if (done && doneData) {
@@ -377,7 +380,7 @@ export default function SaleInput({ onDone }) {
               <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}>상품 선택</span>
               {expandProduct ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
             </button>
-            {expandProduct && <ProductList isGacha={false} />}
+            {expandProduct && <ProductList isGacha={false} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} />}
           </div>
         </>
       )}
@@ -446,7 +449,7 @@ export default function SaleInput({ onDone }) {
               {/* 상품 목록 */}
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>상품 선택 {gachaRemaining <= 0 && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '12px' }}>(선택 완료 — 더 담으려면 수량 조절)</span>}</div>
-                <ProductList isGacha={true} />
+                <ProductList isGacha={true} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} />
               </div>
             </>
           )}
