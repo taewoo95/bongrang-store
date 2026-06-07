@@ -89,22 +89,25 @@ function GradeSettingsModal({ onClose }) {
 // ── 공통 상품 선택 UI (컴포넌트 외부 정의 — 내부 정의 시 매 렌더마다 remount) ──
 function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }) {
   const inCart = isGacha ? gachaCart.find(c => c.product.id === p.id) : cart.find(c => c.product.id === p.id)
-  const disabled = isGacha && gachaRemaining <= 0 && !inCart
+  const outOfStock = p.stock <= 0
+  const disabled = outOfStock || (isGacha && gachaRemaining <= 0 && !inCart)
   return (
     <button
-      onClick={() => isGacha ? onAddGacha(p) : onAdd(p)}
+      onClick={() => { if (disabled) return; isGacha ? onAddGacha(p) : onAdd(p) }}
       disabled={disabled}
       style={{
-        background: inCart ? '#eef2ff' : '#fff',
-        border: inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
+        background: outOfStock ? '#f8fafc' : inCart ? '#eef2ff' : '#fff',
+        border: outOfStock ? '2px solid #f1f5f9' : inCart ? '2px solid #6366f1' : '2px solid #e2e8f0',
         borderRadius: '12px', padding: '14px 16px', textAlign: 'left',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        opacity: disabled ? 0.4 : 1, cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1, cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >
       <div>
-        <div style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{p.name}</div>
-        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>재고 {p.stock}개</div>
+        <div style={{ fontSize: '15px', fontWeight: '600', color: outOfStock ? '#94a3b8' : '#1e293b' }}>{p.name}</div>
+        <div style={{ fontSize: '12px', color: outOfStock ? '#ef4444' : '#94a3b8', marginTop: '2px', fontWeight: outOfStock ? '600' : '400' }}>
+          {outOfStock ? '재고 없음' : `재고 ${p.stock}개`}
+        </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {inCart && <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>{inCart.qty}개</span>}

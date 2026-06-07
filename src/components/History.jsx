@@ -5,10 +5,11 @@
  * 2026-06-06 수정 모달 시간 입력 timezone 버그 수정 (UTC 문자열 → 로컬 시간 변환)
  * 2026-06-06 날짜 필터 및 그룹핑 로컬 날짜 기준으로 교정 (UTC 날짜 비교 오류 해결)
  * 2026-06-06 뽑기 판매 내역 통합 표시 (뽑기 배지, 등수명, 매출 = 등수 가격)
+ * 2026-06-07 기간별 판매 내역 CSV 내보내기 추가 (일반+뽑기 통합)
  */
 import { useState } from 'react'
 import { getSales, deleteSale, updateSale, getProducts, getGachaSales, deleteGachaSale } from '../store'
-import { CalendarDays, Trash2, Edit2, X, Check } from 'lucide-react'
+import { CalendarDays, Trash2, Edit2, X, Check, Download } from 'lucide-react'
 
 function toDate(iso) {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -122,6 +123,60 @@ export default function History() {
   const today = new Date().toISOString().slice(0, 10)
   const refresh = () => { setSales(getSales()); setGachaSales(getGachaSales()) }
 
+  const handleExportCSV = () => {
+    const rows = [
+      ['날짜', '시간', '구분', '상품명', '수량', '단가(원)', '합계(원)', '원가(원)', '이익(원)'],
+    ]
+    // 일반 판매
+    filteredNormal.forEach(s => {
+      const d = new Date(s.time)
+      const profit = s.totalPrice - s.costPrice * s.qty
+      rows.push([
+        toLocalDate(s.time),
+        d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        '일반',
+        s.productName,
+        s.qty,
+        s.unitPrice,
+        s.totalPrice,
+        s.costPrice * s.qty,
+        profit,
+      ])
+    })
+    // 뽑기 판매
+    filteredGacha.forEach(gs => {
+      const d = new Date(gs.time)
+      const cost = gs.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)
+      const productNames = gs.products.map(p => `${p.productName}×${p.qty}`).join(' / ')
+      rows.push([
+        toLocalDate(gs.time),
+        d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        `뽑기(${gs.gradeName})`,
+        productNames,
+        gs.products.reduce((a, p) => a + p.qty, 0),
+        '-',
+        gs.gradePrice,
+        cost,
+        gs.gradePrice - cost,
+      ])
+    })
+    // 날짜+시간 오름차순 정렬
+    rows.sort((a, b) => {
+      if (a[0] === '날짜') return -1
+      return `${a[0]} ${a[1]}`.localeCompare(`${b[0]} ${b[1]}`)
+    })
+
+    const bom = '﻿' // 엑셀 한글 깨짐 방지 BOM
+    const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `판매내역_${startDate}_${endDate}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleDelete = (sale) => {
     if (!confirm(`"${sale.productName}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
     deleteSale(sale.id)
@@ -179,7 +234,23 @@ export default function History() {
         />
       )}
 
-      <h1 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '20px' }}>판매 내역</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 내역</h1>
+        <button
+          onClick={handleExportCSV}
+          disabled={totalCount === 0}
+          style={{
+            background: totalCount > 0 ? '#10b981' : '#e2e8f0',
+            color: totalCount > 0 ? '#fff' : '#94a3b8',
+            borderRadius: '10px', padding: '8px 14px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            fontSize: '14px', fontWeight: '600',
+            cursor: totalCount > 0 ? 'pointer' : 'default',
+          }}
+        >
+          <Download size={15} /> CSV 내보내기
+        </button>
+      </div>
 
       {/* 날짜 필터 */}
       <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
