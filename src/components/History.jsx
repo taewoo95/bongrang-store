@@ -121,6 +121,7 @@ export default function History() {
   const [editSale, setEditSale] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
+  const firstOfMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-01`
   const refresh = () => { setSales(getSales()); setGachaSales(getGachaSales()) }
 
   const handleExportCSV = () => {
@@ -265,21 +266,22 @@ export default function History() {
         </div>
         <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
           {[
-            { label: '오늘', fn: () => { setStartDate(today); setEndDate(today) } },
+            { label: '오늘', fn: () => { setStartDate(today); setEndDate(today) }, active: startDate === today && endDate === today },
             { label: '이번 주', fn: () => {
               const d = new Date(); const day = d.getDay()
               const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
               setStartDate(mon.toISOString().slice(0, 10)); setEndDate(today)
-            }},
+            }, active: endDate === today && startDate !== today && startDate !== firstOfMonth },
             { label: '이번 달', fn: () => {
               const d = new Date()
               setStartDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`)
               setEndDate(today)
-            }},
+            }, active: startDate === firstOfMonth && endDate === today },
           ].map(btn => (
             <button key={btn.label} onClick={btn.fn} style={{
-              background: '#f1f5f9', color: '#475569', borderRadius: '8px',
-              padding: '6px 12px', fontSize: '13px', fontWeight: '500',
+              background: btn.active ? '#6366f1' : '#f1f5f9',
+              color: btn.active ? '#fff' : '#475569',
+              borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: btn.active ? '700' : '500',
             }}>
               {btn.label}
             </button>

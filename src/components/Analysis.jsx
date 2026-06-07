@@ -175,17 +175,21 @@ export default function Analysis() {
         </div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[
-            { label: '오늘', fn: () => { setStartDate(today); setEndDate(today) } },
-            { label: '이번 달', fn: () => { setStartDate(firstOfMonth); setEndDate(today) } },
+            { label: '오늘', fn: () => { setStartDate(today); setEndDate(today) }, active: startDate === today && endDate === today },
+            { label: '이번 달', fn: () => { setStartDate(firstOfMonth); setEndDate(today) }, active: startDate === firstOfMonth && endDate === today },
             { label: '저번 달', fn: () => {
               const d = new Date(); d.setMonth(d.getMonth()-1)
               const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0')
               const last = new Date(y, d.getMonth()+1, 0).getDate()
               setStartDate(`${y}-${m}-01`); setEndDate(`${y}-${m}-${last}`)
-            }},
-            { label: '올해 전체', fn: () => { setStartDate(`${new Date().getFullYear()}-01-01`); setEndDate(today) } },
+            }, active: false },
+            { label: '올해 전체', fn: () => { setStartDate(`${new Date().getFullYear()}-01-01`); setEndDate(today) }, active: startDate === `${new Date().getFullYear()}-01-01` && endDate === today },
           ].map(btn => (
-            <button key={btn.label} onClick={btn.fn} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: '500' }}>
+            <button key={btn.label} onClick={btn.fn} style={{
+              background: btn.active ? '#6366f1' : '#f1f5f9',
+              color: btn.active ? '#fff' : '#475569',
+              borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: btn.active ? '700' : '500',
+            }}>
               {btn.label}
             </button>
           ))}
