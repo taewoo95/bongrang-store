@@ -27,12 +27,17 @@ export default function App() {
         {tab === 'analysis' && <Analysis />}
       </div>
 
-      <nav style={{
+      <div style={{
         position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '480px',
+        height: 'env(safe-area-inset-bottom)',
+        background: '#000', zIndex: 99,
+      }} />
+      <nav style={{
+        position: 'fixed', bottom: 'env(safe-area-inset-bottom)', left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '480px',
         background: '#fff', borderTop: '1px solid #e2e8f0',
         display: 'flex', zIndex: 100,
-        paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
