@@ -124,7 +124,7 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
   const btnProps = { isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }
   return (
     <>
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
           <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
             padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',

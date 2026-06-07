@@ -257,7 +257,7 @@ export default function Products() {
       )}
 
       {/* 카테고리 필터 탭 */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => {
           const count = c.id === 'all' ? products.length
             : c.id === 'none' ? products.filter(p => !p.categoryId).length
