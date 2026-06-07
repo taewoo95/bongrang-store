@@ -7,6 +7,7 @@
  * 2026-06-06 카테고리 관리 패널 접기/펼치기 토글 추가 (기본 접힘 상태)
  * 2026-06-06 상품 목록 이름 가나다순 정렬
  * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
+ * 2026-06-07 상품 추가/수정 폼을 하단 슬라이드업 모달로 변경 (수정 버튼 누르면 바로 표시)
  */
 import { useState } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
@@ -206,48 +207,51 @@ export default function Products() {
         )}
       </div>
 
-      {/* 상품 추가/수정 폼 */}
+      {/* 상품 추가/수정 — 하단 슬라이드업 모달 */}
       {showForm && (
-        <div style={{ background: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600' }}>{editId ? '상품 수정' : '새 상품 추가'}</h3>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', color: '#94a3b8' }}><X size={20} /></button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <label style={labelStyle}>상품명 *</label>
-              <input style={inputStyle} placeholder="예: 고양이 키링" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={e => { if (e.target === e.currentTarget) { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) } }}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '700' }}>{editId ? '상품 수정' : '새 상품 추가'}</h3>
+              <button onClick={() => { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) }} style={{ background: 'none', color: '#94a3b8' }}><X size={22} /></button>
             </div>
-            <div>
-              <label style={labelStyle}>카테고리</label>
-              <select style={{ ...inputStyle, color: form.categoryId ? '#1e293b' : '#94a3b8' }} value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
-                <option value="">카테고리 없음</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={labelStyle}>원가 (원)</label>
-                <input style={inputStyle} type="number" placeholder="0" value={form.costPrice} onChange={e => setForm(f => ({ ...f, costPrice: e.target.value }))} />
+                <label style={labelStyle}>상품명 *</label>
+                <input style={inputStyle} placeholder="예: 고양이 키링" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
-                <label style={labelStyle}>판매가 (원) *</label>
-                <input style={inputStyle} type="number" placeholder="0" value={form.sellPrice} onChange={e => setForm(f => ({ ...f, sellPrice: e.target.value }))} />
+                <label style={labelStyle}>카테고리</label>
+                <select style={{ ...inputStyle, color: form.categoryId ? '#1e293b' : '#94a3b8' }} value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
+                  <option value="">카테고리 없음</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>원가 (원)</label>
+                  <input style={inputStyle} type="number" placeholder="0" value={form.costPrice} onChange={e => setForm(f => ({ ...f, costPrice: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={labelStyle}>판매가 (원) *</label>
+                  <input style={inputStyle} type="number" placeholder="0" value={form.sellPrice} onChange={e => setForm(f => ({ ...f, sellPrice: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>현재 재고 (개)</label>
+                  <input style={inputStyle} type="number" placeholder="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={labelStyle}>부족 알림 기준 (개)</label>
+                  <input style={inputStyle} type="number" placeholder="5" value={form.lowStockAlert} onChange={e => setForm(f => ({ ...f, lowStockAlert: e.target.value }))} />
+                </div>
+              </div>
+              <button onClick={handleSubmit} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '16px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Check size={18} /> {editId ? '수정 완료' : '추가 완료'}
+              </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={labelStyle}>현재 재고 (개)</label>
-                <input style={inputStyle} type="number" placeholder="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} />
-              </div>
-              <div>
-                <label style={labelStyle}>부족 알림 기준 (개)</label>
-                <input style={inputStyle} type="number" placeholder="5" value={form.lowStockAlert} onChange={e => setForm(f => ({ ...f, lowStockAlert: e.target.value }))} />
-              </div>
-            </div>
-            <button onClick={handleSubmit} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <Check size={18} /> {editId ? '수정 완료' : '추가 완료'}
-            </button>
           </div>
         </div>
       )}
