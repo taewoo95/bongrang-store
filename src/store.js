@@ -82,10 +82,13 @@ export function deleteProduct(id) {
 
 export function exportBackup({ newFile = false } = {}) {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
+    categories: getCategories(),
     products: getProducts(),
     sales: getSales(),
+    gachaGrades: getGachaGrades(),
+    gachaSales: getGachaSales(),
   }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -105,8 +108,12 @@ export function importBackup(file) {
         const data = JSON.parse(e.target.result)
         if (!Array.isArray(data.products) || !Array.isArray(data.sales)) throw new Error('올바른 백업 파일이 아니에요.')
         if (data.products.length > 50000 || data.sales.length > 500000) throw new Error('백업 파일이 너무 커요.')
+        // 카테고리·뽑기 데이터도 복원 (구버전 백업은 빈 배열로 처리)
+        if (Array.isArray(data.categories)) saveCategories(data.categories)
         saveProducts(data.products)
         saveSales(data.sales)
+        if (Array.isArray(data.gachaGrades)) saveGachaGrades(data.gachaGrades)
+        if (Array.isArray(data.gachaSales)) saveGachaSales(data.gachaSales)
         resolve({ products: data.products.length, sales: data.sales.length, exportedAt: data.exportedAt })
       } catch (err) {
         reject(err)
