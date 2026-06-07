@@ -218,7 +218,7 @@ export default function Analysis() {
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>{c.qty}개</span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{c.revenue.toLocaleString()}원</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{Math.round(c.revenue).toLocaleString()}원</span>
                 <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '6px' }}>{c.pct}%</span>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function Analysis() {
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{slot.label}</div>
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>{slot.range}</div>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: slot.revenue > 0 ? slot.color : '#cbd5e1' }}>{slot.count}건</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{slot.revenue > 0 ? `${slot.revenue.toLocaleString()}원` : '-'}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{slot.revenue > 0 ? `${Math.round(slot.revenue).toLocaleString()}원` : '-'}</div>
                 </button>
               ))}
             </div>
@@ -325,7 +325,7 @@ export default function Analysis() {
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{p.revenue.toLocaleString()}원</div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{Math.round(p.revenue).toLocaleString()}원</div>
                 <div style={{ fontSize: '12px', color: '#10b981' }}>이익률 {p.profitRate}%</div>
               </div>
             </div>
@@ -338,8 +338,8 @@ export default function Analysis() {
               }} />
             </div>
             <div style={{ display: 'flex', gap: '12px', fontSize: '12px', marginTop: '4px' }}>
-              <span style={{ color: '#64748b' }}>원가 {p.cost.toLocaleString()}원</span>
-              <span style={{ color: p.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>이익 {p.profit.toLocaleString()}원</span>
+              <span style={{ color: '#64748b' }}>원가 {Math.round(p.cost).toLocaleString()}원</span>
+              <span style={{ color: p.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>이익 {Math.round(p.profit).toLocaleString()}원</span>
             </div>
           </div>
         ))}
@@ -362,7 +362,7 @@ export default function Analysis() {
               {top3Revenue.map((p, i) => (
                 <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: '10px', marginBottom: '5px', background: i === 0 ? '#eef2ff' : '#f8fafc' }}>
                   <span style={{ fontSize: '14px' }}>{medal(i)} {p.name}</span>
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{p.revenue.toLocaleString()}원</span>
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{Math.round(p.revenue).toLocaleString()}원</span>
                 </div>
               ))}
             </div>
