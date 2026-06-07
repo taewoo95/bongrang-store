@@ -36,10 +36,26 @@ export function QRViewModal({ product, onClose }) {
       ctx.fillStyle = '#94a3b8'
       ctx.font = '13px sans-serif'
       ctx.fillText(`${product.sellPrice.toLocaleString()}원`, 150, 322)
-      const link = document.createElement('a')
-      link.download = `QR_${product.name}.png`
-      link.href = canvas.toDataURL('image/png')
-      link.click()
+
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `QR_${product.name}.png`, { type: 'image/png' })
+        // 모바일: Web Share API로 네이티브 공유 시트 (사진 저장 가능)
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: `QR_${product.name}` })
+            return
+          } catch (e) {
+            if (e.name === 'AbortError') return // 사용자가 취소
+          }
+        }
+        // 폴백: 파일 다운로드
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.download = `QR_${product.name}.png`
+        link.href = url
+        link.click()
+        URL.revokeObjectURL(url)
+      }, 'image/png')
     }
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
   }
@@ -59,7 +75,7 @@ export function QRViewModal({ product, onClose }) {
           <div style={{ fontSize: '14px', color: '#6366f1', marginTop: '4px' }}>{product.sellPrice.toLocaleString()}원</div>
         </div>
         <button onClick={handleDownload} style={{ width: '100%', background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          <Download size={18} /> QR 이미지 저장
+          <Download size={18} /> QR 이미지 저장 (사진 앱으로)
         </button>
       </div>
     </div>
