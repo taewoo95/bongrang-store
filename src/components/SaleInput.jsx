@@ -321,7 +321,7 @@ export default function SaleInput({ onDone }) {
 
   // ── 메인 화면 ───────────────────────────────────────────────
   return (
-    <div style={{ padding: '20px', paddingBottom: (saleMode === 'normal' ? cart.length : gachaCart.length) > 0 ? 'calc(110px + env(safe-area-inset-bottom))' : 'calc(20px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ padding: '20px', paddingBottom: (saleMode === 'normal' ? cart.length : gachaCart.length) > 0 ? 'calc(140px + env(safe-area-inset-bottom))' : 'calc(20px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {showScanner && <QRScanModal cart={cart} onScanned={handleQRScanned} onClose={() => setShowScanner(false)} />}
       {showGradeSettings && <GradeSettingsModal onClose={() => { setShowGradeSettings(false); refreshGrades() }} />}
 
@@ -464,7 +464,7 @@ export default function SaleInput({ onDone }) {
 
       {/* 하단 고정 바 — 일반 */}
       {saleMode === 'normal' && cart.length > 0 && (
-        <div style={{ position: 'fixed', bottom: 'calc(56px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderTop: '1px solid #e2e8f0', zIndex: 50 }}>
+        <div style={{ position: 'fixed', bottom: 'calc(56px + env(safe-area-inset-bottom) - 1px)', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: '#fff', borderTop: '1px solid #e2e8f0', zIndex: 150 }}>
           {cartExpanded && (
             <div style={{ borderBottom: '1px solid #e2e8f0', maxHeight: '40vh', overflowY: 'auto' }}>
               {cart.map((c, i) => (
@@ -497,7 +497,7 @@ export default function SaleInput({ onDone }) {
 
       {/* 하단 고정 바 — 뽑기 */}
       {saleMode === 'gacha' && selectedGrade && gachaCart.length > 0 && (
-        <div style={{ position: 'fixed', bottom: 'calc(56px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderTop: '1px solid #e2e8f0', zIndex: 50, padding: '12px 16px' }}>
+        <div style={{ position: 'fixed', bottom: 'calc(56px + env(safe-area-inset-bottom) - 1px)', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: '#fff', borderTop: '1px solid #e2e8f0', zIndex: 150, padding: '12px 16px' }}>
           <button onClick={handleGachaSell} style={{ width: '100%', background: gachaRemaining === 0 ? '#6366f1' : '#8b5cf6', color: '#fff', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Gift size={18} />
             {selectedGrade.name} 뽑기 완료 — {selectedGrade.price.toLocaleString()}원
