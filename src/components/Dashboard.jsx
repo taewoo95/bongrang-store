@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { getProducts, getSales, getGachaSales, exportBackup, importBackup } from '../store'
-import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload, FilePlus, Smartphone } from 'lucide-react'
+import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload, FilePlus, Smartphone, RefreshCw } from 'lucide-react'
 
 export default function Dashboard({ onNavigate }) {
   const [restoreMsg, setRestoreMsg] = useState(null)
@@ -9,6 +9,7 @@ export default function Dashboard({ onNavigate }) {
   const [isInstalled, setIsInstalled] = useState(
     window.matchMedia('(display-mode: standalone)').matches
   )
+  const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
@@ -22,6 +23,19 @@ export default function Dashboard({ onNavigate }) {
     installPrompt.prompt()
     const { outcome } = await installPrompt.userChoice
     if (outcome === 'accepted') { setIsInstalled(true); setInstallPrompt(null) }
+  }
+
+  const handleForceUpdate = async () => {
+    setUpdating(true)
+    try {
+      // 모든 서비스워커 캐시 삭제 후 재시작
+      const keys = await caches.keys()
+      await Promise.all(keys.map(k => caches.delete(k)))
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map(r => r.unregister()))
+    } finally {
+      window.location.reload()
+    }
   }
 
   const handleImport = async (e) => {
@@ -151,7 +165,18 @@ export default function Dashboard({ onNavigate }) {
 
       {/* 백업 / 복원 */}
       <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>데이터 백업 / 복원</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>데이터 백업 / 복원</h3>
+          <button
+            onClick={handleForceUpdate}
+            disabled={updating}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', fontWeight: '600' }}
+          >
+            <RefreshCw size={13} style={{ animation: updating ? 'spin 1s linear infinite' : 'none' }} />
+            {updating ? '업데이트 중…' : '앱 업데이트'}
+          </button>
+        </div>
+        <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
         {restoreMsg && (
           <div style={{ background: restoreMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#1e293b' }}>
             {restoreMsg}
