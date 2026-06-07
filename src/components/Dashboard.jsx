@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { getProducts, getSales, exportBackup, importBackup } from '../store'
+import { getProducts, getSales, getGachaSales, exportBackup, importBackup } from '../store'
 import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload, FilePlus, Smartphone } from 'lucide-react'
 
 export default function Dashboard({ onNavigate }) {
@@ -40,11 +40,15 @@ export default function Dashboard({ onNavigate }) {
   }
   const products = getProducts()
   const sales = getSales()
+  const gachaSales = getGachaSales()
 
   const today = new Date().toDateString()
   const todaySales = sales.filter(s => new Date(s.time).toDateString() === today)
+  const todayGacha = gachaSales.filter(s => new Date(s.time).toDateString() === today)
   const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalPrice, 0)
+    + todayGacha.reduce((sum, s) => sum + s.gradePrice, 0)
   const todayProfit = todaySales.reduce((sum, s) => sum + (s.totalPrice - s.costPrice * s.qty), 0)
+    + todayGacha.reduce((sum, s) => sum + s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0), 0)
 
   const lowStock = products.filter(p => p.stock <= p.lowStockAlert && p.lowStockAlert > 0)
 
@@ -73,7 +77,7 @@ export default function Dashboard({ onNavigate }) {
             {todayRevenue.toLocaleString()}원
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
-            {todaySales.length}건 판매
+            {todaySales.length + todayGacha.length}건 판매
           </div>
         </div>
 
