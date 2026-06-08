@@ -291,24 +291,6 @@ export default function History() {
         </div>
       </div>
 
-      {/* 판매 유형 필터 */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-        {[
-          { key: 'all', label: `전체 ${filteredNormal.length + filteredGacha.length}건` },
-          { key: 'normal', label: `일반 ${filteredNormal.length}건` },
-          { key: 'gacha', label: `뽑기 ${filteredGacha.length}건` },
-        ].map(({ key, label }) => (
-          <button key={key} onClick={() => setTypeFilter(key)} style={{
-            flex: 1, padding: '10px 0', borderRadius: '10px', fontSize: '13px', fontWeight: '600',
-            background: typeFilter === key ? '#6366f1' : '#fff',
-            color: typeFilter === key ? '#fff' : '#475569',
-            border: typeFilter === key ? '2px solid #6366f1' : '2px solid #e2e8f0',
-          }}>
-            {label}
-          </button>
-        ))}
-      </div>
-
       {/* 합계 카드 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
         <div style={{ background: '#6366f1', borderRadius: '14px', padding: '16px' }}>
@@ -326,6 +308,23 @@ export default function History() {
       </div>
 
       {/* 날짜별 내역 */}
+      {/* 목록 헤더 — 필터 버튼 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '10px', gap: '6px' }}>
+        {[
+          { key: 'all', label: '전체' },
+          { key: 'gacha', label: '뽑기' },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setTypeFilter(key)} style={{
+            padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+            background: typeFilter === key ? '#6366f1' : '#fff',
+            color: typeFilter === key ? '#fff' : '#475569',
+            border: typeFilter === key ? '1.5px solid #6366f1' : '1.5px solid #e2e8f0',
+          }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {totalCount === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
           <p>해당 기간에 판매 내역이 없어요</p>
