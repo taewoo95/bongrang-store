@@ -437,19 +437,20 @@ export default function SaleInput({ onDone }) {
             {grades.length === 0 ? (
               <p style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '8px 16px 14px' }}>등수를 먼저 설정해주세요</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(grades.length, 4)}, 1fr)`, gap: '8px', padding: '0 16px 14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(grades.length, 5)}, 1fr)`, gap: '6px', padding: '0 16px 14px' }}>
                 {grades.map(g => {
                   const active = selectedGrade?.id === g.id
                   return (
                     <button key={g.id} onClick={() => { setSelectedGrade(g); setGachaCart([]); setActiveCat('all') }} style={{
-                      padding: '8px 6px', borderRadius: '12px', fontSize: '13px', fontWeight: '700',
+                      padding: '10px 4px', borderRadius: '12px', fontSize: '13px', fontWeight: '700',
                       background: active ? '#6366f1' : '#f1f5f9',
                       color: active ? '#fff' : '#475569',
                       border: active ? '2px solid #6366f1' : '2px solid transparent',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+                      minWidth: 0,
                     }}>
-                      <span>{g.name}</span>
-                      <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.85 }}>{g.allowance}개 · {g.price.toLocaleString()}원</span>
+                      <span style={{ whiteSpace: 'nowrap' }}>{g.name}</span>
+                      <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.85, whiteSpace: 'nowrap' }}>{g.price.toLocaleString()}원</span>
                     </button>
                   )
                 })}
