@@ -376,27 +376,40 @@ export default function SaleInput({ onDone }) {
         <>
           {cart.length > 0 && (
             <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-              <div style={{ padding: '14px 16px', background: '#eef2ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: '#4338ca' }}>🛒 {cart.length}종 · {totalItems}개</span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: '#6366f1' }}>{totalAmount.toLocaleString()}원</span>
+              {/* 헤더 */}
+              <div style={{ padding: '12px 16px', background: '#eef2ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca' }}>🛒 {cart.length}종 · {totalItems}개</span>
+                <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{totalAmount.toLocaleString()}원</span>
               </div>
+              {/* 상품 행 */}
               {cart.map((c, i) => (
-                <div key={c.product.id} style={{ padding: '14px 16px', borderBottom: i < cart.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{c.product.name}</span>
-                    <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', padding: '4px' }}><Trash2 size={15} /></button>
+                <div key={c.product.id} style={{
+                  padding: '10px 16px',
+                  borderBottom: i < cart.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                }}>
+                  {/* 상품명 */}
+                  <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: '#1e293b', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.product.name}</span>
+                  {/* 수량 조절 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
+                    <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
+                    <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
+                    <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', borderRadius: '10px', padding: '6px 10px', border: '1px solid #e2e8f0' }}>
-                      <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Minus size={15} /></button>
-                      <span style={{ fontSize: '16px', fontWeight: '700', minWidth: '24px', textAlign: 'center' }}>{c.qty}</span>
-                      <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Plus size={15} /></button>
-                    </div>
-                    <span style={{ color: '#94a3b8', fontSize: '13px' }}>×</span>
-                    <input type="number" value={c.unitPrice} onChange={e => updatePrice(c.product.id, e.target.value)} style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', background: '#f8fafc', outline: 'none', textAlign: 'right' }} />
-                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>원</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', minWidth: '70px', textAlign: 'right' }}>= {(c.unitPrice * c.qty).toLocaleString()}원</span>
+                  {/* 단가 입력 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    <input
+                      type="number"
+                      value={c.unitPrice}
+                      onChange={e => updatePrice(c.product.id, e.target.value)}
+                      style={{ width: '76px', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
                   </div>
+                  {/* 소계 */}
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', flexShrink: 0, minWidth: '58px', textAlign: 'right' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
+                  {/* 삭제 */}
+                  <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                 </div>
               ))}
             </div>
