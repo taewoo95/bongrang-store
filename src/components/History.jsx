@@ -120,6 +120,7 @@ export default function History() {
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [editSale, setEditSale] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
+  const [typeFilter, setTypeFilter] = useState('all') // 'all' | 'normal' | 'gacha'
 
   const today = new Date().toISOString().slice(0, 10)
   const firstOfMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-01`
@@ -203,8 +204,8 @@ export default function History() {
 
   // merge and tag: normal sales get type:'normal', gacha get type:'gacha'
   const filtered = [
-    ...filteredNormal.map(s => ({ ...s, _type: 'normal' })),
-    ...filteredGacha.map(s => ({ ...s, _type: 'gacha' })),
+    ...(typeFilter !== 'gacha' ? filteredNormal.map(s => ({ ...s, _type: 'normal' })) : []),
+    ...(typeFilter !== 'normal' ? filteredGacha.map(s => ({ ...s, _type: 'gacha' })) : []),
   ].sort((a, b) => new Date(b.time) - new Date(a.time))
 
   const totalRevenue = filteredNormal.reduce((sum, s) => sum + s.totalPrice, 0)
@@ -288,6 +289,24 @@ export default function History() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* 판매 유형 필터 */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        {[
+          { key: 'all', label: `전체 ${filteredNormal.length + filteredGacha.length}건` },
+          { key: 'normal', label: `일반 ${filteredNormal.length}건` },
+          { key: 'gacha', label: `뽑기 ${filteredGacha.length}건` },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setTypeFilter(key)} style={{
+            flex: 1, padding: '10px 0', borderRadius: '10px', fontSize: '13px', fontWeight: '600',
+            background: typeFilter === key ? '#6366f1' : '#fff',
+            color: typeFilter === key ? '#fff' : '#475569',
+            border: typeFilter === key ? '2px solid #6366f1' : '2px solid #e2e8f0',
+          }}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* 합계 카드 */}
