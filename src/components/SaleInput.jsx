@@ -387,12 +387,13 @@ export default function SaleInput({ onDone }) {
                   padding: '10px 16px',
                   borderBottom: i < cart.length - 1 ? '1px solid #f1f5f9' : 'none',
                 }}>
-                  {/* 1행: 상품명 + 삭제 */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1, marginRight: '8px' }}>{c.product.name}</span>
+                  {/* 1행: 상품명 + 소계 + 삭제 */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1 }}>{c.product.name}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', flexShrink: 0, whiteSpace: 'nowrap' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                   </div>
-                  {/* 2행: 수량 + 단가 + 소계 */}
+                  {/* 2행: 수량 + × + 단가입력 + 원 */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
                       <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
@@ -400,16 +401,13 @@ export default function SaleInput({ onDone }) {
                       <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
                     </div>
                     <span style={{ fontSize: '12px', color: '#94a3b8' }}>×</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flex: 1 }}>
-                      <input
-                        type="number"
-                        value={c.unitPrice}
-                        onChange={e => updatePrice(c.product.id, e.target.value)}
-                        style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
-                      />
-                      <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
-                    </div>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', flexShrink: 0 }}>= {(c.unitPrice * c.qty).toLocaleString()}원</span>
+                    <input
+                      type="number"
+                      value={c.unitPrice}
+                      onChange={e => updatePrice(c.product.id, e.target.value)}
+                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
                   </div>
                 </div>
               ))}
