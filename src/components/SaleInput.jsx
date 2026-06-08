@@ -386,30 +386,31 @@ export default function SaleInput({ onDone }) {
                 <div key={c.product.id} style={{
                   padding: '10px 16px',
                   borderBottom: i < cart.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  display: 'flex', alignItems: 'center', gap: '10px',
                 }}>
-                  {/* 상품명 */}
-                  <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: '#1e293b', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.product.name}</span>
-                  {/* 수량 조절 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
-                    <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
-                    <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
-                    <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
+                  {/* 1행: 상품명 + 삭제 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1, marginRight: '8px' }}>{c.product.name}</span>
+                    <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                   </div>
-                  {/* 단가 입력 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                    <input
-                      type="number"
-                      value={c.unitPrice}
-                      onChange={e => updatePrice(c.product.id, e.target.value)}
-                      style={{ width: '76px', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
-                    />
-                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
+                  {/* 2행: 수량 + 단가 + 소계 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
+                      <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
+                      <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
+                      <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>×</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flex: 1 }}>
+                      <input
+                        type="number"
+                        value={c.unitPrice}
+                        onChange={e => updatePrice(c.product.id, e.target.value)}
+                        style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', flexShrink: 0 }}>= {(c.unitPrice * c.qty).toLocaleString()}원</span>
                   </div>
-                  {/* 소계 */}
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1', flexShrink: 0, minWidth: '58px', textAlign: 'right' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
-                  {/* 삭제 */}
-                  <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                 </div>
               ))}
             </div>
@@ -486,15 +487,18 @@ export default function SaleInput({ onDone }) {
                     <div key={c.product.id} style={{
                       padding: '10px 16px',
                       borderBottom: i < gachaCart.length - 1 ? '1px solid #f1f5f9' : 'none',
-                      display: 'flex', alignItems: 'center', gap: '10px',
                     }}>
-                      <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: '#1e293b', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.product.name}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
-                        <button onClick={() => updateGachaQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
-                        <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '18px', textAlign: 'center' }}>{c.qty}</span>
-                        <button onClick={() => gachaRemaining > 0 && updateGachaQty(c.product.id, 1)} style={{ background: 'none', color: gachaRemaining > 0 ? '#94a3b8' : '#e2e8f0', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1, marginRight: '8px' }}>{c.product.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px' }}>
+                            <button onClick={() => updateGachaQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
+                            <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '18px', textAlign: 'center' }}>{c.qty}</span>
+                            <button onClick={() => gachaRemaining > 0 && updateGachaQty(c.product.id, 1)} style={{ background: 'none', color: gachaRemaining > 0 ? '#94a3b8' : '#e2e8f0', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
+                          </div>
+                          <button onClick={() => removeFromGachaCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', padding: '2px' }}><X size={15} /></button>
+                        </div>
                       </div>
-                      <button onClick={() => removeFromGachaCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                     </div>
                   ))
                 )}
