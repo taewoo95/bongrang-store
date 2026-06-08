@@ -80,7 +80,7 @@ export function deleteProduct(id) {
   saveProducts(products)
 }
 
-export function exportBackup({ newFile = false } = {}) {
+export async function exportBackup({ newFile = false } = {}) {
   const data = {
     version: 2,
     exportedAt: new Date().toISOString(),
@@ -90,14 +90,21 @@ export function exportBackup({ newFile = false } = {}) {
     gachaGrades: getGachaGrades(),
     gachaSales: getGachaSales(),
   }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
   const date = new Date().toISOString().slice(0, 10)
-  a.href = url
-  a.download = newFile ? `재고관리_백업_${date}.json` : `재고관리_백업.json`
-  a.click()
-  URL.revokeObjectURL(url)
+  const filename = newFile ? `재고관리_백업_${date}.json` : `재고관리_백업.json`
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const file = new File([blob], filename, { type: 'application/json' })
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file], title: filename })
+  } else {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 }
 
 export function importBackup(file) {
