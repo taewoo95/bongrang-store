@@ -427,17 +427,18 @@ export default function SaleInput({ onDone }) {
       {saleMode === 'gacha' && (
         <>
           {/* 등수 선택 — 가로 스크롤 슬림 칩 */}
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <div style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px 10px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>등수 선택</span>
               <button onClick={() => setShowGradeSettings(true)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Settings size={12} /> 설정
               </button>
             </div>
             {grades.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '8px 0' }}>등수를 먼저 설정해주세요</p>
+              <p style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '8px 16px 14px' }}>등수를 먼저 설정해주세요</p>
             ) : (
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: '14px' }}>
+                <div style={{ display: 'flex', gap: '8px', padding: '0 16px', width: 'max-content' }}>
                 {grades.map(g => {
                   const active = selectedGrade?.id === g.id
                   return (
@@ -453,6 +454,7 @@ export default function SaleInput({ onDone }) {
                     </button>
                   )
                 })}
+                </div>
               </div>
             )}
           </div>
