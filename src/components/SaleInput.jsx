@@ -427,67 +427,85 @@ export default function SaleInput({ onDone }) {
       {/* ── 뽑기 판매 ── */}
       {saleMode === 'gacha' && (
         <>
-          {/* 등수 선택 */}
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>뽑기 등수 선택</span>
-              <button onClick={() => setShowGradeSettings(true)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Settings size={13} /> 등수 설정
+          {/* 등수 선택 — 가로 스크롤 슬림 칩 */}
+          <div style={{ background: '#fff', borderRadius: '14px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>등수 선택</span>
+              <button onClick={() => setShowGradeSettings(true)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Settings size={12} /> 설정
               </button>
             </div>
             {grades.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '8px' }}>등수를 먼저 설정해주세요</p>
+              <p style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '8px 0' }}>등수를 먼저 설정해주세요</p>
             ) : (
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {grades.map(g => (
-                  <button key={g.id} onClick={() => { setSelectedGrade(g); setGachaCart([]); setActiveCat('all') }} style={{
-                    padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '700',
-                    background: selectedGrade?.id === g.id ? '#6366f1' : '#f1f5f9',
-                    color: selectedGrade?.id === g.id ? '#fff' : '#475569',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                  }}>
-                    <span>{g.name}</span>
-                    <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>{g.allowance}개 · {g.price.toLocaleString()}원</span>
-                  </button>
-                ))}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {grades.map(g => {
+                  const active = selectedGrade?.id === g.id
+                  return (
+                    <button key={g.id} onClick={() => { setSelectedGrade(g); setGachaCart([]); setActiveCat('all') }} style={{
+                      flexShrink: 0, padding: '8px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700',
+                      background: active ? '#6366f1' : '#f1f5f9',
+                      color: active ? '#fff' : '#475569',
+                      border: active ? '2px solid #6366f1' : '2px solid transparent',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px',
+                    }}>
+                      <span>{g.name}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.85 }}>{g.allowance}개 · {g.price.toLocaleString()}원</span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
 
-          {/* 선택된 등수 상품 담기 */}
+          {/* 선택된 등수 — 담은 목록 + 진행 상황 통합 */}
           {selectedGrade && (
             <>
-              {/* 선택 현황 바 */}
-              <div style={{ background: gachaRemaining === 0 ? '#ede9fe' : '#eef2ff', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#4338ca' }}>🎁 {selectedGrade.name}</span>
-                  <span style={{ fontSize: '13px', color: '#6366f1', marginLeft: '8px' }}>{gachaTotalSelected}/{selectedGrade.allowance}개 선택</span>
+              {/* 담은 상품 + 진행 헤더 */}
+              <div style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                {/* 진행 헤더 */}
+                <div style={{
+                  padding: '10px 16px',
+                  background: gachaRemaining === 0 ? '#ede9fe' : '#eef2ff',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Gift size={14} color="#6366f1" />
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca' }}>{selectedGrade.name}</span>
+                    <span style={{ fontSize: '12px', color: '#6366f1' }}>{gachaTotalSelected} / {selectedGrade.allowance}개</span>
+                  </div>
+                  {gachaRemaining > 0
+                    ? <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: '600', background: '#c7d2fe', borderRadius: '20px', padding: '2px 8px' }}>{gachaRemaining}개 남음</span>
+                    : <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700', background: '#ddd6fe', borderRadius: '20px', padding: '2px 8px' }}>✓ 완료</span>}
                 </div>
-                {gachaRemaining > 0
-                  ? <span style={{ fontSize: '13px', color: '#6366f1', fontWeight: '600' }}>{gachaRemaining}개 더 선택 가능</span>
-                  : <span style={{ fontSize: '13px', color: '#7c3aed', fontWeight: '700' }}>✓ 선택 완료</span>}
-              </div>
-
-              {/* 담은 목록 */}
-              {gachaCart.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
-                  {gachaCart.map((c, i) => (
-                    <div key={c.product.id} style={{ padding: '12px 16px', borderBottom: i < gachaCart.length - 1 ? '1px solid #f1f5f9' : 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{c.product.name}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', borderRadius: '8px', padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                        <button onClick={() => updateGachaQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Minus size={13} /></button>
+                {/* 담은 상품 목록 */}
+                {gachaCart.length === 0 ? (
+                  <div style={{ padding: '14px 16px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>아래에서 상품을 담아주세요</div>
+                ) : (
+                  gachaCart.map((c, i) => (
+                    <div key={c.product.id} style={{
+                      padding: '10px 16px',
+                      borderBottom: i < gachaCart.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                    }}>
+                      <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: '#1e293b', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.product.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
+                        <button onClick={() => updateGachaQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
                         <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '18px', textAlign: 'center' }}>{c.qty}</span>
-                        <button onClick={() => gachaRemaining > 0 && updateGachaQty(c.product.id, 1)} style={{ background: 'none', color: gachaRemaining > 0 ? '#94a3b8' : '#e2e8f0', display: 'flex' }}><Plus size={13} /></button>
+                        <button onClick={() => gachaRemaining > 0 && updateGachaQty(c.product.id, 1)} style={{ background: 'none', color: gachaRemaining > 0 ? '#94a3b8' : '#e2e8f0', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
                       </div>
-                      <button onClick={() => removeFromGachaCart(c.product.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '6px', padding: '5px', display: 'flex' }}><Trash2 size={13} /></button>
+                      <button onClick={() => removeFromGachaCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
 
               {/* 상품 목록 */}
               <div>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>상품 선택 {gachaRemaining <= 0 && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '12px' }}>(선택 완료 — 더 담으려면 수량 조절)</span>}</div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>
+                  상품 선택
+                  {gachaRemaining <= 0 && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '12px', marginLeft: '6px' }}>수량 조절 가능</span>}
+                </div>
                 <ProductList isGacha={true} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} />
               </div>
             </>
