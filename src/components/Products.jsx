@@ -26,7 +26,8 @@ export default function Products() {
   const [newCatName, setNewCatName] = useState('')
   const [showCatPanel, setShowCatPanel] = useState(false)
   const [showDragHint, setShowDragHint] = useState(false)
-  const dragHintTimer = useRef(null)
+  const hintDelayTimer = useRef(null)
+  const hintHideTimer  = useRef(null)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
   const [qrProduct, setQrProduct] = useState(null)
@@ -104,8 +105,9 @@ export default function Products() {
     const resetDrag = () => {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
-      clearTimeout(dragHintTimer.current)
-      dragHintTimer.current = null
+      clearTimeout(hintDelayTimer.current)
+      hintDelayTimer.current = null
+      setShowDragHint(false)
       if (liveOrderRef.current && draggingIdRef.current) {
         reorderCategories(liveOrderRef.current)
         setCategories([...liveOrderRef.current])
@@ -123,11 +125,13 @@ export default function Products() {
         // 그립 외 영역 홀드 시 안내 팝업
         const row = e.target.closest('[data-catid]')
         if (!row) return
-        const hintTimer = setTimeout(() => {
+        touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        hintDelayTimer.current = setTimeout(() => {
+          hintDelayTimer.current = null
           setShowDragHint(true)
-          dragHintTimer.current = setTimeout(() => setShowDragHint(false), 1000)
+          clearTimeout(hintHideTimer.current)
+          hintHideTimer.current = setTimeout(() => setShowDragHint(false), 1000)
         }, 500)
-        dragHintTimer.current = hintTimer
         return
       }
       const row = grip.closest('[data-catid]')
@@ -148,6 +152,14 @@ export default function Products() {
     const onMove = (e) => {
       const dx = e.touches[0].clientX - (touchStartPos.current?.x ?? 0)
       const dy = e.touches[0].clientY - (touchStartPos.current?.y ?? 0)
+      // 힌트 지연 대기 중 손가락이 움직이면 취소
+      if (hintDelayTimer.current) {
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+          clearTimeout(hintDelayTimer.current)
+          hintDelayTimer.current = null
+        }
+        return
+      }
       // 롱프레스 대기 중 손가락이 많이 움직이면 취소 (스크롤 허용)
       if (longPressTimer.current) {
         if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
@@ -305,7 +317,7 @@ export default function Products() {
 
             {/* 드래그 안내 팝업 */}
             {showDragHint && (
-              <div style={{ background: 'rgba(0,0,0,0.72)', color: '#fff', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', textAlign: 'center', marginBottom: '4px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.72)', color: '#fff', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', textAlign: 'center', marginBottom: '4px', pointerEvents: 'none' }}>
                 ☰ 왼쪽을 눌러 이동시키세요
               </div>
             )}
