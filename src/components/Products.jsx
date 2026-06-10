@@ -233,7 +233,7 @@ export default function Products() {
 
             {/* 카테고리 목록 — 홀드해서 순서 변경 */}
             <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: draggingId ? 'none' : 'auto' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
