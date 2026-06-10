@@ -25,6 +25,7 @@ export default function Products() {
   const [editId, setEditId] = useState(null)
   const [newCatName, setNewCatName] = useState('')
   const [showCatPanel, setShowCatPanel] = useState(false)
+  const [draggingIdx, setDraggingIdx] = useState(null)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
   const [qrProduct, setQrProduct] = useState(null)
@@ -81,24 +82,30 @@ export default function Products() {
   const dragIdx = useRef(null)
   const dragOverIdx = useRef(null)
 
-  const handleDragStart = (idx) => { dragIdx.current = idx }
-  const handleDragEnter = (idx) => { dragOverIdx.current = idx }
-  const handleDragEnd = () => {
+  const applyReorder = () => {
     const from = dragIdx.current
     const to = dragOverIdx.current
-    if (from === null || to === null || from === to) { dragIdx.current = null; dragOverIdx.current = null; return }
+    if (from === null || to === null || from === to) return
     const next = [...categories]
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
     reorderCategories(next)
     setCategories(next)
-    dragIdx.current = null
-    dragOverIdx.current = null
   }
+
+  // 마우스/데스크톱 드래그
+  const handleDragStart = (idx) => { dragIdx.current = idx; setDraggingIdx(idx) }
+  const handleDragEnter = (idx) => { dragOverIdx.current = idx }
+  const handleDragEnd = () => { applyReorder(); dragIdx.current = null; dragOverIdx.current = null; setDraggingIdx(null) }
 
   // 터치 드래그
   const touchDragIdx = useRef(null)
-  const handleTouchStart = (idx) => { touchDragIdx.current = idx }
+  const handleTouchStart = (e, idx) => {
+    e.preventDefault() // 텍스트 선택 방지
+    touchDragIdx.current = idx
+    dragIdx.current = idx
+    setDraggingIdx(idx)
+  }
   const handleTouchMove = (e) => {
     const touch = e.touches[0]
     const el = document.elementFromPoint(touch.clientX, touch.clientY)
@@ -106,9 +113,11 @@ export default function Products() {
     if (row) dragOverIdx.current = Number(row.dataset.catidx)
   }
   const handleTouchEnd = () => {
-    dragIdx.current = touchDragIdx.current
-    handleDragEnd()
+    applyReorder()
+    dragIdx.current = null
+    dragOverIdx.current = null
     touchDragIdx.current = null
+    setDraggingIdx(null)
   }
 
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
@@ -207,32 +216,49 @@ export default function Products() {
             </div>
 
             {/* 카테고리 목록 — 홀드해서 순서 변경 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none' }}>
               {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
-              {categories.map((c, idx) => (
-                <div
-                  key={c.id}
-                  data-catidx={idx}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragEnter={() => handleDragEnter(idx)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={e => e.preventDefault()}
-                  onTouchStart={() => handleTouchStart(idx)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', borderRadius: '10px', padding: '10px 10px', border: '1px solid #e2e8f0', cursor: 'grab', userSelect: 'none' }}
-                >
-                  <GripVertical size={16} color="#cbd5e1" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
-                    {products.filter(p => p.categoryId === c.id).length}개
-                  </span>
-                  <button onClick={() => handleDeleteCategory(c.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '6px', padding: '4px 6px', display: 'flex', alignItems: 'center' }}>
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
+              {categories.map((c, idx) => {
+                const isGrabbed = draggingIdx === idx
+                return (
+                  <div
+                    key={c.id}
+                    data-catidx={idx}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragEnter={() => handleDragEnter(idx)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    onTouchStart={e => handleTouchStart(e, idx)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      background: isGrabbed ? '#eef2ff' : '#f8fafc',
+                      borderRadius: '10px', padding: '10px 10px',
+                      border: isGrabbed ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                      boxShadow: isGrabbed ? '0 4px 12px rgba(99,102,241,0.25)' : 'none',
+                      transform: isGrabbed ? 'scale(1.02)' : 'scale(1)',
+                      opacity: isGrabbed ? 0.85 : 1,
+                      transition: 'box-shadow 0.15s, border 0.15s, transform 0.15s',
+                      cursor: 'grab',
+                    }}
+                  >
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', padding: '2px 4px', touchAction: 'none', flexShrink: 0 }}
+                    >
+                      <GripVertical size={18} color={isGrabbed ? '#6366f1' : '#cbd5e1'} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
+                      {products.filter(p => p.categoryId === c.id).length}개
+                    </span>
+                    <button onClick={() => handleDeleteCategory(c.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '6px', padding: '4px 6px', display: 'flex', alignItems: 'center' }}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
