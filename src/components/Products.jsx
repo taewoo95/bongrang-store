@@ -25,6 +25,8 @@ export default function Products() {
   const [editId, setEditId] = useState(null)
   const [newCatName, setNewCatName] = useState('')
   const [showCatPanel, setShowCatPanel] = useState(false)
+  const [showDragHint, setShowDragHint] = useState(false)
+  const dragHintTimer = useRef(null)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
   const [qrProduct, setQrProduct] = useState(null)
@@ -102,6 +104,8 @@ export default function Products() {
     const resetDrag = () => {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
+      clearTimeout(dragHintTimer.current)
+      dragHintTimer.current = null
       if (liveOrderRef.current && draggingIdRef.current) {
         reorderCategories(liveOrderRef.current)
         setCategories([...liveOrderRef.current])
@@ -115,7 +119,17 @@ export default function Products() {
 
     const onStart = (e) => {
       const grip = e.target.closest('[data-grip]')
-      if (!grip) return
+      if (!grip) {
+        // 그립 외 영역 홀드 시 안내 팝업
+        const row = e.target.closest('[data-catid]')
+        if (!row) return
+        const hintTimer = setTimeout(() => {
+          setShowDragHint(true)
+          dragHintTimer.current = setTimeout(() => setShowDragHint(false), 1000)
+        }, 500)
+        dragHintTimer.current = hintTimer
+        return
+      }
       const row = grip.closest('[data-catid]')
       if (!row) return
       e.preventDefault() // iOS 롱프레스 contextmenu / touchend 방지
@@ -288,6 +302,13 @@ export default function Products() {
                 <Plus size={14} /> 추가
               </button>
             </div>
+
+            {/* 드래그 안내 팝업 */}
+            {showDragHint && (
+              <div style={{ background: 'rgba(0,0,0,0.72)', color: '#fff', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', textAlign: 'center', marginBottom: '4px' }}>
+                ☰ 왼쪽을 눌러 이동시키세요
+              </div>
+            )}
 
             {/* 카테고리 목록 — 그립 핸들 0.5초 홀드로 순서 변경 */}
             <div
