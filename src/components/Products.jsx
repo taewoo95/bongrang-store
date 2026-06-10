@@ -9,7 +9,7 @@
  * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
  * 2026-06-07 상품 추가/수정 폼을 하단 슬라이드업 모달로 변경 (수정 버튼 누르면 바로 표시)
  */
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
 import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, GripVertical, QrCode } from 'lucide-react'
 import { QRViewModal } from './QRModal'
@@ -82,85 +82,78 @@ export default function Products() {
   const [liveOrder, setLiveOrder] = useState(null)
   const displayed = liveOrder ?? categories
 
-  // 내부 ref (passive:false 이벤트 핸들러에서 최신 state 접근용)
+  // ref — 터치 핸들러에서 최신 state 읽기용
   const draggingIdRef = useRef(null)
-  const liveOrderRef = useRef(null)
+  const liveOrderRef  = useRef(null)
   const categoriesRef = useRef(categories)
   const longPressTimer = useRef(null)
-  const touchStartPos = useRef(null)
+  const touchStartPos  = useRef(null)
   const listRef = useRef(null)
-
-  // ref 동기화
   draggingIdRef.current = draggingId
-  liveOrderRef.current = liveOrder
+  liveOrderRef.current  = liveOrder
   categoriesRef.current = categories
 
-  // passive:false touchmove — 드래그 중 스크롤 차단 + 실시간 이동
-  useEffect(() => {
-    const el = listRef.current
-    if (!el) return
-    const onMove = (e) => {
-      if (!draggingIdRef.current) return
-      e.preventDefault()
-      const touch = e.touches[0]
-      const rows = el.querySelectorAll('[data-catid]')
-      let hoverIdx = null
-      rows.forEach((row, i) => {
-        const rect = row.getBoundingClientRect()
-        if (touch.clientY >= rect.top && touch.clientY < rect.bottom) hoverIdx = i
-      })
-      if (hoverIdx === null) return
-      const base = liveOrderRef.current ?? categoriesRef.current
-      const fromIdx = base.findIndex(c => c.id === draggingIdRef.current)
-      if (fromIdx === hoverIdx) return
-      const arr = [...base]
-      const [moved] = arr.splice(fromIdx, 1)
-      arr.splice(hoverIdx, 0, moved)
-      liveOrderRef.current = arr
-      setLiveOrder(arr)
-    }
-    el.addEventListener('touchmove', onMove, { passive: false })
-    return () => el.removeEventListener('touchmove', onMove)
-  }, [])
-
-  const handleTouchStart = (e, id) => {
+  // ── 터치 드래그 (grip에서만 시작) ──────────────────────────
+  const gripTouchStart = (e, id) => {
+    // 이미 드래그 중이면 무시
     touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     longPressTimer.current = setTimeout(() => {
-      if (navigator.vibrate) navigator.vibrate(30) // 진동 피드백
+      longPressTimer.current = null  // 타이머 완료 표시
+      if (navigator.vibrate) navigator.vibrate(25)
       draggingIdRef.current = id
+      liveOrderRef.current  = [...categoriesRef.current]
       setDraggingId(id)
-      const order = [...categoriesRef.current]
-      liveOrderRef.current = order
-      setLiveOrder(order)
+      setLiveOrder([...categoriesRef.current])
     }, 500)
   }
 
-  const handleTouchMovePre = (e) => {
-    // 롱프레스 대기 중 손가락이 움직이면 취소 (스크롤 허용)
-    if (!longPressTimer.current) return
-    const dx = e.touches[0].clientX - touchStartPos.current.x
-    const dy = e.touches[0].clientY - touchStartPos.current.y
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+  const gripTouchMove = (e) => {
+    const dx = e.touches[0].clientX - (touchStartPos.current?.x ?? 0)
+    const dy = e.touches[0].clientY - (touchStartPos.current?.y ?? 0)
+
+    // 롱프레스 대기 중 손가락이 많이 움직이면 타이머 취소 (스크롤 허용)
+    if (longPressTimer.current && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
+      return
     }
+    if (!draggingIdRef.current) return
+
+    // 드래그 중: 스크롤 막고 실시간 이동
+    e.preventDefault()
+    const touch = e.touches[0]
+    const rows = listRef.current?.querySelectorAll('[data-catid]')
+    if (!rows) return
+    let hoverIdx = null
+    rows.forEach((row, i) => {
+      const r = row.getBoundingClientRect()
+      if (touch.clientY >= r.top && touch.clientY < r.bottom) hoverIdx = i
+    })
+    if (hoverIdx === null) return
+    const base = liveOrderRef.current ?? categoriesRef.current
+    const fromIdx = base.findIndex(c => c.id === draggingIdRef.current)
+    if (fromIdx === hoverIdx) return
+    const arr = [...base]
+    const [moved] = arr.splice(fromIdx, 1)
+    arr.splice(hoverIdx, 0, moved)
+    liveOrderRef.current = arr
+    setLiveOrder(arr)
   }
 
-  const handleTouchEnd = () => {
+  const gripTouchEnd = () => {
     clearTimeout(longPressTimer.current)
     longPressTimer.current = null
-    const finalOrder = liveOrderRef.current
-    if (finalOrder && draggingIdRef.current) {
-      reorderCategories(finalOrder)
-      setCategories(finalOrder)
+    if (liveOrderRef.current && draggingIdRef.current) {
+      reorderCategories(liveOrderRef.current)
+      setCategories(liveOrderRef.current)
     }
     draggingIdRef.current = null
-    liveOrderRef.current = null
-    setLiveOrder(null)
+    liveOrderRef.current  = null
     setDraggingId(null)
+    setLiveOrder(null)
   }
 
-  // 마우스/데스크톱 드래그
+  // ── 마우스/데스크톱 드래그 ──────────────────────────────────
   const mouseDragId = useRef(null)
   const handleDragStart = (id) => { mouseDragId.current = id; setDraggingId(id); setLiveOrder([...categories]) }
   const handleDragEnter = (id) => {
@@ -168,7 +161,7 @@ export default function Products() {
     setLiveOrder(prev => {
       const arr = [...(prev ?? categories)]
       const from = arr.findIndex(c => c.id === mouseDragId.current)
-      const to = arr.findIndex(c => c.id === id)
+      const to   = arr.findIndex(c => c.id === id)
       if (from === -1 || to === -1) return prev
       const [moved] = arr.splice(from, 1)
       arr.splice(to, 0, moved)
@@ -177,9 +170,7 @@ export default function Products() {
   }
   const handleDragEnd = () => {
     if (liveOrder) { reorderCategories(liveOrder); setCategories(liveOrder) }
-    setLiveOrder(null)
-    setDraggingId(null)
-    mouseDragId.current = null
+    setLiveOrder(null); setDraggingId(null); mouseDragId.current = null
   }
 
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
@@ -277,12 +268,10 @@ export default function Products() {
               </button>
             </div>
 
-            {/* 카테고리 목록 — 홀드해서 순서 변경 */}
+            {/* 카테고리 목록 — 그립 핸들 0.5초 홀드로 순서 변경 */}
             <div
               ref={listRef}
               style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none' }}
-              onTouchMove={handleTouchMovePre}
-              onTouchEnd={handleTouchEnd}
             >
               {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
               {displayed.map((c) => {
@@ -296,8 +285,6 @@ export default function Products() {
                     onDragEnter={() => handleDragEnter(c.id)}
                     onDragEnd={handleDragEnd}
                     onDragOver={e => e.preventDefault()}
-                    onTouchStart={e => handleTouchStart(e, c.id)}
-                    onTouchMove={handleTouchMovePre}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px',
                       background: isGrabbed ? '#eef2ff' : '#f8fafc',
@@ -307,11 +294,19 @@ export default function Products() {
                       transform: isGrabbed ? 'scale(1.02)' : 'scale(1)',
                       opacity: isGrabbed ? 0.9 : 1,
                       transition: 'transform 0.1s, box-shadow 0.1s, border 0.1s',
-                      cursor: 'grab',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', padding: '2px 4px', flexShrink: 0 }}>
-                      <GripVertical size={18} color={isGrabbed ? '#6366f1' : '#cbd5e1'} />
+                    {/* 그립 핸들 — 여기서만 홀드 드래그 시작 */}
+                    <div
+                      onTouchStart={e => gripTouchStart(e, c.id)}
+                      onTouchMove={gripTouchMove}
+                      onTouchEnd={gripTouchEnd}
+                      style={{
+                        display: 'flex', alignItems: 'center', padding: '6px 8px 6px 2px',
+                        flexShrink: 0, cursor: 'grab', touchAction: 'none',
+                      }}
+                    >
+                      <GripVertical size={20} color={isGrabbed ? '#6366f1' : '#94a3b8'} />
                     </div>
                     <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
                     <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
