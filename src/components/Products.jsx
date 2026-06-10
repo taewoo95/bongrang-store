@@ -9,9 +9,9 @@
  * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
  * 2026-06-07 상품 추가/수정 폼을 하단 슬라이드업 모달로 변경 (수정 버튼 누르면 바로 표시)
  */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
-import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, ArrowUp, ArrowDown, QrCode } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, GripVertical, QrCode } from 'lucide-react'
 import { QRViewModal } from './QRModal'
 
 const EMPTY_FORM = { name: '', categoryId: '', costPrice: '', sellPrice: '', stock: '', lowStockAlert: '5' }
@@ -77,13 +77,38 @@ export default function Products() {
     deleteCategory(id); refresh()
   }
 
-  const handleMoveCategory = (idx, dir) => {
+  // 드래그 상태
+  const dragIdx = useRef(null)
+  const dragOverIdx = useRef(null)
+
+  const handleDragStart = (idx) => { dragIdx.current = idx }
+  const handleDragEnter = (idx) => { dragOverIdx.current = idx }
+  const handleDragEnd = () => {
+    const from = dragIdx.current
+    const to = dragOverIdx.current
+    if (from === null || to === null || from === to) { dragIdx.current = null; dragOverIdx.current = null; return }
     const next = [...categories]
-    const swapIdx = idx + dir
-    if (swapIdx < 0 || swapIdx >= next.length) return
-    ;[next[idx], next[swapIdx]] = [next[swapIdx], next[idx]]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
     reorderCategories(next)
     setCategories(next)
+    dragIdx.current = null
+    dragOverIdx.current = null
+  }
+
+  // 터치 드래그
+  const touchDragIdx = useRef(null)
+  const handleTouchStart = (idx) => { touchDragIdx.current = idx }
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0]
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const row = el?.closest('[data-catidx]')
+    if (row) dragOverIdx.current = Number(row.dataset.catidx)
+  }
+  const handleTouchEnd = () => {
+    dragIdx.current = touchDragIdx.current
+    handleDragEnd()
+    touchDragIdx.current = null
   }
 
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
@@ -181,19 +206,24 @@ export default function Products() {
               </button>
             </div>
 
-            {/* 카테고리 목록 */}
+            {/* 카테고리 목록 — 홀드해서 순서 변경 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
               {categories.map((c, idx) => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', borderRadius: '10px', padding: '8px 10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <button onClick={() => handleMoveCategory(idx, -1)} disabled={idx === 0} style={{ background: 'none', color: idx === 0 ? '#e2e8f0' : '#94a3b8', padding: '1px', display: 'flex', cursor: idx === 0 ? 'default' : 'pointer' }}>
-                      <ArrowUp size={12} />
-                    </button>
-                    <button onClick={() => handleMoveCategory(idx, 1)} disabled={idx === categories.length - 1} style={{ background: 'none', color: idx === categories.length - 1 ? '#e2e8f0' : '#94a3b8', padding: '1px', display: 'flex', cursor: idx === categories.length - 1 ? 'default' : 'pointer' }}>
-                      <ArrowDown size={12} />
-                    </button>
-                  </div>
+                <div
+                  key={c.id}
+                  data-catidx={idx}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragEnter={() => handleDragEnter(idx)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={e => e.preventDefault()}
+                  onTouchStart={() => handleTouchStart(idx)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', borderRadius: '10px', padding: '10px 10px', border: '1px solid #e2e8f0', cursor: 'grab', userSelect: 'none' }}
+                >
+                  <GripVertical size={16} color="#cbd5e1" style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
                   <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
                     {products.filter(p => p.categoryId === c.id).length}개
