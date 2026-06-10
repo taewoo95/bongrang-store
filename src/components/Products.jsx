@@ -9,7 +9,7 @@
  * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
  * 2026-06-07 상품 추가/수정 폼을 하단 슬라이드업 모달로 변경 (수정 버튼 누르면 바로 표시)
  */
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
 import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, GripVertical, QrCode } from 'lucide-react'
 import { QRViewModal } from './QRModal'
@@ -82,76 +82,97 @@ export default function Products() {
   const [liveOrder, setLiveOrder] = useState(null)
   const displayed = liveOrder ?? categories
 
-  // ref — 터치 핸들러에서 최신 state 읽기용
-  const draggingIdRef = useRef(null)
-  const liveOrderRef  = useRef(null)
-  const categoriesRef = useRef(categories)
+  // ref — 네이티브 이벤트 핸들러에서 최신 state 접근용
+  const draggingIdRef  = useRef(null)
+  const liveOrderRef   = useRef(null)
+  const categoriesRef  = useRef(categories)
   const longPressTimer = useRef(null)
   const touchStartPos  = useRef(null)
-  const listRef = useRef(null)
-  draggingIdRef.current = draggingId
-  liveOrderRef.current  = liveOrder
-  categoriesRef.current = categories
+  const listRef        = useRef(null)
+  draggingIdRef.current  = draggingId
+  liveOrderRef.current   = liveOrder
+  categoriesRef.current  = categories
 
-  // ── 터치 드래그 (grip에서만 시작) ──────────────────────────
-  const gripTouchStart = (e, id) => {
-    // 이미 드래그 중이면 무시
-    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null  // 타이머 완료 표시
-      if (navigator.vibrate) navigator.vibrate(25)
-      draggingIdRef.current = id
-      liveOrderRef.current  = [...categoriesRef.current]
-      setDraggingId(id)
-      setLiveOrder([...categoriesRef.current])
-    }, 500)
-  }
+  // ── 터치 드래그: passive:false 네이티브 이벤트로 등록 ─────
+  // (React 합성 이벤트는 passive:true라 preventDefault 불가 → iOS 롱프레스 touchend 차단 불가)
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
 
-  const gripTouchMove = (e) => {
-    const dx = e.touches[0].clientX - (touchStartPos.current?.x ?? 0)
-    const dy = e.touches[0].clientY - (touchStartPos.current?.y ?? 0)
-
-    // 롱프레스 대기 중 손가락이 많이 움직이면 타이머 취소 (스크롤 허용)
-    if (longPressTimer.current && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+    const resetDrag = () => {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
-      return
+      if (liveOrderRef.current && draggingIdRef.current) {
+        reorderCategories(liveOrderRef.current)
+        setCategories([...liveOrderRef.current])
+      }
+      draggingIdRef.current = null
+      liveOrderRef.current  = null
+      touchStartPos.current = null
+      setDraggingId(null)
+      setLiveOrder(null)
     }
-    if (!draggingIdRef.current) return
 
-    // 드래그 중: 스크롤 막고 실시간 이동
-    e.preventDefault()
-    const touch = e.touches[0]
-    const rows = listRef.current?.querySelectorAll('[data-catid]')
-    if (!rows) return
-    let hoverIdx = null
-    rows.forEach((row, i) => {
-      const r = row.getBoundingClientRect()
-      if (touch.clientY >= r.top && touch.clientY < r.bottom) hoverIdx = i
-    })
-    if (hoverIdx === null) return
-    const base = liveOrderRef.current ?? categoriesRef.current
-    const fromIdx = base.findIndex(c => c.id === draggingIdRef.current)
-    if (fromIdx === hoverIdx) return
-    const arr = [...base]
-    const [moved] = arr.splice(fromIdx, 1)
-    arr.splice(hoverIdx, 0, moved)
-    liveOrderRef.current = arr
-    setLiveOrder(arr)
-  }
-
-  const gripTouchEnd = () => {
-    clearTimeout(longPressTimer.current)
-    longPressTimer.current = null
-    if (liveOrderRef.current && draggingIdRef.current) {
-      reorderCategories(liveOrderRef.current)
-      setCategories(liveOrderRef.current)
+    const onStart = (e) => {
+      const grip = e.target.closest('[data-grip]')
+      if (!grip) return
+      const row = grip.closest('[data-catid]')
+      if (!row) return
+      e.preventDefault() // iOS 롱프레스 contextmenu / touchend 방지
+      const id = row.dataset.catid
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null
+        if (navigator.vibrate) navigator.vibrate(25)
+        draggingIdRef.current = id
+        liveOrderRef.current  = [...categoriesRef.current]
+        setDraggingId(id)
+        setLiveOrder([...categoriesRef.current])
+      }, 500)
     }
-    draggingIdRef.current = null
-    liveOrderRef.current  = null
-    setDraggingId(null)
-    setLiveOrder(null)
-  }
+
+    const onMove = (e) => {
+      const dx = e.touches[0].clientX - (touchStartPos.current?.x ?? 0)
+      const dy = e.touches[0].clientY - (touchStartPos.current?.y ?? 0)
+      // 롱프레스 대기 중 손가락이 많이 움직이면 취소 (스크롤 허용)
+      if (longPressTimer.current) {
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+          clearTimeout(longPressTimer.current)
+          longPressTimer.current = null
+        }
+        return
+      }
+      if (!draggingIdRef.current) return
+      e.preventDefault() // 드래그 중 스크롤 차단
+      const touch = e.touches[0]
+      const rows = list.querySelectorAll('[data-catid]')
+      let hoverIdx = null
+      rows.forEach((row, i) => {
+        const r = row.getBoundingClientRect()
+        if (touch.clientY >= r.top && touch.clientY < r.bottom) hoverIdx = i
+      })
+      if (hoverIdx === null) return
+      const base = liveOrderRef.current ?? categoriesRef.current
+      const fromIdx = base.findIndex(c => c.id === draggingIdRef.current)
+      if (fromIdx === hoverIdx) return
+      const arr = [...base]
+      const [moved] = arr.splice(fromIdx, 1)
+      arr.splice(hoverIdx, 0, moved)
+      liveOrderRef.current = arr
+      setLiveOrder([...arr])
+    }
+
+    list.addEventListener('touchstart',  onStart,    { passive: false })
+    list.addEventListener('touchmove',   onMove,     { passive: false })
+    list.addEventListener('touchend',    resetDrag)
+    list.addEventListener('touchcancel', resetDrag)
+    return () => {
+      list.removeEventListener('touchstart',  onStart)
+      list.removeEventListener('touchmove',   onMove)
+      list.removeEventListener('touchend',    resetDrag)
+      list.removeEventListener('touchcancel', resetDrag)
+    }
+  }, [showCatPanel]) // showCatPanel 변경 시 재실행 — 패널 오픈 후 listRef.current가 세팅됨
 
   // ── 마우스/데스크톱 드래그 ──────────────────────────────────
   const mouseDragId = useRef(null)
@@ -296,11 +317,9 @@ export default function Products() {
                       transition: 'transform 0.1s, box-shadow 0.1s, border 0.1s',
                     }}
                   >
-                    {/* 그립 핸들 — 여기서만 홀드 드래그 시작 */}
+                    {/* 그립 핸들 — 0.5초 홀드로 드래그 시작 */}
                     <div
-                      onTouchStart={e => gripTouchStart(e, c.id)}
-                      onTouchMove={gripTouchMove}
-                      onTouchEnd={gripTouchEnd}
+                      data-grip="1"
                       style={{
                         display: 'flex', alignItems: 'center', padding: '6px 8px 6px 2px',
                         flexShrink: 0, cursor: 'grab', touchAction: 'none',
