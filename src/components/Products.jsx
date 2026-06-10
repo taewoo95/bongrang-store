@@ -25,7 +25,6 @@ export default function Products() {
   const [editId, setEditId] = useState(null)
   const [newCatName, setNewCatName] = useState('')
   const [showCatPanel, setShowCatPanel] = useState(false)
-  const [draggingIdx, setDraggingIdx] = useState(null)
   const [activeCat, setActiveCat] = useState('all') // 'all' | categoryId | 'none'
   const [collapsedCats, setCollapsedCats] = useState({})
   const [qrProduct, setQrProduct] = useState(null)
@@ -78,46 +77,63 @@ export default function Products() {
     deleteCategory(id); refresh()
   }
 
-  // 드래그 상태
-  const dragIdx = useRef(null)
-  const dragOverIdx = useRef(null)
+  // 드래그 상태 — 실시간 순서 미리보기
+  const [draggingId, setDraggingId] = useState(null)   // 잡힌 항목의 id
+  const [liveOrder, setLiveOrder] = useState(null)      // 드래그 중 순서 (null이면 categories 그대로)
+  const displayed = liveOrder ?? categories
 
-  const applyReorder = () => {
-    const from = dragIdx.current
-    const to = dragOverIdx.current
-    if (from === null || to === null || from === to) return
-    const next = [...categories]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    reorderCategories(next)
-    setCategories(next)
+  // 터치 드래그 (스크롤 차단 + 실시간 이동)
+  const handleTouchStart = (e, id) => {
+    e.preventDefault()
+    setDraggingId(id)
+    setLiveOrder([...categories])
+  }
+  const handleTouchMove = (e) => {
+    if (!draggingId) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const rows = document.querySelectorAll('[data-catid]')
+    let hoverIdx = null
+    rows.forEach((row, i) => {
+      const rect = row.getBoundingClientRect()
+      if (touch.clientY >= rect.top && touch.clientY < rect.bottom) hoverIdx = i
+    })
+    if (hoverIdx === null) return
+    setLiveOrder(prev => {
+      const arr = [...(prev ?? categories)]
+      const fromIdx = arr.findIndex(c => c.id === draggingId)
+      if (fromIdx === hoverIdx) return prev
+      const [moved] = arr.splice(fromIdx, 1)
+      arr.splice(hoverIdx, 0, moved)
+      return arr
+    })
+  }
+  const handleTouchEnd = () => {
+    if (liveOrder) { reorderCategories(liveOrder); setCategories(liveOrder) }
+    setLiveOrder(null)
+    setDraggingId(null)
   }
 
   // 마우스/데스크톱 드래그
-  const handleDragStart = (idx) => { dragIdx.current = idx; setDraggingIdx(idx) }
-  const handleDragEnter = (idx) => { dragOverIdx.current = idx }
-  const handleDragEnd = () => { applyReorder(); dragIdx.current = null; dragOverIdx.current = null; setDraggingIdx(null) }
-
-  // 터치 드래그
-  const touchDragIdx = useRef(null)
-  const handleTouchStart = (e, idx) => {
-    e.preventDefault() // 텍스트 선택 방지
-    touchDragIdx.current = idx
-    dragIdx.current = idx
-    setDraggingIdx(idx)
+  const mouseDragId = useRef(null)
+  const handleDragStart = (id) => { mouseDragId.current = id; setDraggingId(id); setLiveOrder([...categories]) }
+  const handleDragEnter = (id) => {
+    if (!mouseDragId.current || mouseDragId.current === id) return
+    setLiveOrder(prev => {
+      const arr = [...(prev ?? categories)]
+      const from = arr.findIndex(c => c.id === mouseDragId.current)
+      const to = arr.findIndex(c => c.id === id)
+      if (from === -1 || to === -1) return prev
+      const [moved] = arr.splice(from, 1)
+      arr.splice(to, 0, moved)
+      return arr
+    })
   }
-  const handleTouchMove = (e) => {
-    const touch = e.touches[0]
-    const el = document.elementFromPoint(touch.clientX, touch.clientY)
-    const row = el?.closest('[data-catidx]')
-    if (row) dragOverIdx.current = Number(row.dataset.catidx)
-  }
-  const handleTouchEnd = () => {
-    applyReorder()
-    dragIdx.current = null
-    dragOverIdx.current = null
-    touchDragIdx.current = null
-    setDraggingIdx(null)
+  const handleDragEnd = () => {
+    if (liveOrder) { reorderCategories(liveOrder); setCategories(liveOrder) }
+    setLiveOrder(null)
+    setDraggingId(null)
+    mouseDragId.current = null
   }
 
   const toggleCollapse = (id) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }))
@@ -216,37 +232,37 @@ export default function Products() {
             </div>
 
             {/* 카테고리 목록 — 홀드해서 순서 변경 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none' }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: draggingId ? 'none' : 'auto' }}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
-              {categories.map((c, idx) => {
-                const isGrabbed = draggingIdx === idx
+              {displayed.map((c) => {
+                const isGrabbed = draggingId === c.id
                 return (
                   <div
                     key={c.id}
-                    data-catidx={idx}
+                    data-catid={c.id}
                     draggable
-                    onDragStart={() => handleDragStart(idx)}
-                    onDragEnter={() => handleDragEnter(idx)}
+                    onDragStart={() => handleDragStart(c.id)}
+                    onDragEnter={() => handleDragEnter(c.id)}
                     onDragEnd={handleDragEnd}
                     onDragOver={e => e.preventDefault()}
-                    onTouchStart={e => handleTouchStart(e, idx)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
+                    onTouchStart={e => handleTouchStart(e, c.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px',
                       background: isGrabbed ? '#eef2ff' : '#f8fafc',
                       borderRadius: '10px', padding: '10px 10px',
                       border: isGrabbed ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                      boxShadow: isGrabbed ? '0 4px 12px rgba(99,102,241,0.25)' : 'none',
+                      boxShadow: isGrabbed ? '0 4px 14px rgba(99,102,241,0.3)' : 'none',
                       transform: isGrabbed ? 'scale(1.02)' : 'scale(1)',
-                      opacity: isGrabbed ? 0.85 : 1,
-                      transition: 'box-shadow 0.15s, border 0.15s, transform 0.15s',
+                      opacity: isGrabbed ? 0.9 : 1,
+                      transition: 'transform 0.1s, box-shadow 0.1s, border 0.1s',
                       cursor: 'grab',
                     }}
                   >
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', padding: '2px 4px', touchAction: 'none', flexShrink: 0 }}
-                    >
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '2px 4px', flexShrink: 0 }}>
                       <GripVertical size={18} color={isGrabbed ? '#6366f1' : '#cbd5e1'} />
                     </div>
                     <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
