@@ -9,7 +9,7 @@
  * 2026-06-06 각 상품 카드에 QR 코드 보기 버튼 추가
  * 2026-06-07 상품 추가/수정 폼을 하단 슬라이드업 모달로 변경 (수정 버튼 누르면 바로 표시)
  */
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
 import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, GripVertical, QrCode } from 'lucide-react'
 import { QRViewModal } from './QRModal'
@@ -78,38 +78,84 @@ export default function Products() {
   }
 
   // 드래그 상태 — 실시간 순서 미리보기
-  const [draggingId, setDraggingId] = useState(null)   // 잡힌 항목의 id
-  const [liveOrder, setLiveOrder] = useState(null)      // 드래그 중 순서 (null이면 categories 그대로)
+  const [draggingId, setDraggingId] = useState(null)
+  const [liveOrder, setLiveOrder] = useState(null)
   const displayed = liveOrder ?? categories
 
-  // 터치 드래그 (스크롤 차단 + 실시간 이동)
-  const handleTouchStart = (e, id) => {
-    e.preventDefault()
-    setDraggingId(id)
-    setLiveOrder([...categories])
-  }
-  const handleTouchMove = (e) => {
-    if (!draggingId) return
-    e.preventDefault()
-    const touch = e.touches[0]
-    const rows = document.querySelectorAll('[data-catid]')
-    let hoverIdx = null
-    rows.forEach((row, i) => {
-      const rect = row.getBoundingClientRect()
-      if (touch.clientY >= rect.top && touch.clientY < rect.bottom) hoverIdx = i
-    })
-    if (hoverIdx === null) return
-    setLiveOrder(prev => {
-      const arr = [...(prev ?? categories)]
-      const fromIdx = arr.findIndex(c => c.id === draggingId)
-      if (fromIdx === hoverIdx) return prev
+  // 내부 ref (passive:false 이벤트 핸들러에서 최신 state 접근용)
+  const draggingIdRef = useRef(null)
+  const liveOrderRef = useRef(null)
+  const categoriesRef = useRef(categories)
+  const longPressTimer = useRef(null)
+  const touchStartPos = useRef(null)
+  const listRef = useRef(null)
+
+  // ref 동기화
+  draggingIdRef.current = draggingId
+  liveOrderRef.current = liveOrder
+  categoriesRef.current = categories
+
+  // passive:false touchmove — 드래그 중 스크롤 차단 + 실시간 이동
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const onMove = (e) => {
+      if (!draggingIdRef.current) return
+      e.preventDefault()
+      const touch = e.touches[0]
+      const rows = el.querySelectorAll('[data-catid]')
+      let hoverIdx = null
+      rows.forEach((row, i) => {
+        const rect = row.getBoundingClientRect()
+        if (touch.clientY >= rect.top && touch.clientY < rect.bottom) hoverIdx = i
+      })
+      if (hoverIdx === null) return
+      const base = liveOrderRef.current ?? categoriesRef.current
+      const fromIdx = base.findIndex(c => c.id === draggingIdRef.current)
+      if (fromIdx === hoverIdx) return
+      const arr = [...base]
       const [moved] = arr.splice(fromIdx, 1)
       arr.splice(hoverIdx, 0, moved)
-      return arr
-    })
+      liveOrderRef.current = arr
+      setLiveOrder(arr)
+    }
+    el.addEventListener('touchmove', onMove, { passive: false })
+    return () => el.removeEventListener('touchmove', onMove)
+  }, [])
+
+  const handleTouchStart = (e, id) => {
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    longPressTimer.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(30) // 진동 피드백
+      draggingIdRef.current = id
+      setDraggingId(id)
+      const order = [...categoriesRef.current]
+      liveOrderRef.current = order
+      setLiveOrder(order)
+    }, 500)
   }
+
+  const handleTouchMovePre = (e) => {
+    // 롱프레스 대기 중 손가락이 움직이면 취소 (스크롤 허용)
+    if (!longPressTimer.current) return
+    const dx = e.touches[0].clientX - touchStartPos.current.x
+    const dy = e.touches[0].clientY - touchStartPos.current.y
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
   const handleTouchEnd = () => {
-    if (liveOrder) { reorderCategories(liveOrder); setCategories(liveOrder) }
+    clearTimeout(longPressTimer.current)
+    longPressTimer.current = null
+    const finalOrder = liveOrderRef.current
+    if (finalOrder && draggingIdRef.current) {
+      reorderCategories(finalOrder)
+      setCategories(finalOrder)
+    }
+    draggingIdRef.current = null
+    liveOrderRef.current = null
     setLiveOrder(null)
     setDraggingId(null)
   }
@@ -233,8 +279,9 @@ export default function Products() {
 
             {/* 카테고리 목록 — 홀드해서 순서 변경 */}
             <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
-              onTouchMove={handleTouchMove}
+              ref={listRef}
+              style={{ display: 'flex', flexDirection: 'column', gap: '6px', userSelect: 'none', WebkitUserSelect: 'none' }}
+              onTouchMove={handleTouchMovePre}
               onTouchEnd={handleTouchEnd}
             >
               {categories.length === 0 && <span style={{ fontSize: '13px', color: '#94a3b8' }}>카테고리를 추가해보세요</span>}
@@ -250,6 +297,7 @@ export default function Products() {
                     onDragEnd={handleDragEnd}
                     onDragOver={e => e.preventDefault()}
                     onTouchStart={e => handleTouchStart(e, c.id)}
+                    onTouchMove={handleTouchMovePre}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px',
                       background: isGrabbed ? '#eef2ff' : '#f8fafc',
