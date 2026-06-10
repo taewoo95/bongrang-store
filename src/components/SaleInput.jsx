@@ -183,6 +183,7 @@ export default function SaleInput({ onDone }) {
   const [showGradeSettings, setShowGradeSettings] = useState(false)
   const [gachaDone, setGachaDone] = useState(false)
   const [gachaDoneData, setGachaDoneData] = useState(null)
+  const [showGachaScanner, setShowGachaScanner] = useState(false)
 
   const refreshGrades = () => setGrades(getGachaGrades())
 
@@ -226,6 +227,14 @@ export default function SaleInput({ onDone }) {
     const product = products.find(p => p.id === productId)
     if (!product) return null
     addToCart(product)
+    return product.name
+  }
+
+  const handleGachaQRScanned = (productId) => {
+    const product = products.find(p => p.id === productId)
+    if (!product) return null
+    if (!selectedGrade) return null
+    addToGachaCart(product)
     return product.name
   }
 
@@ -343,6 +352,7 @@ export default function SaleInput({ onDone }) {
   return (
     <div style={{ padding: '20px', paddingBottom: (saleMode === 'normal' ? cart.length : gachaCart.length) > 0 ? 'calc(140px + env(safe-area-inset-bottom))' : 'calc(20px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {showScanner && <QRScanModal cart={cart} onScanned={handleQRScanned} onClose={() => setShowScanner(false)} />}
+      {showGachaScanner && <QRScanModal cart={gachaCart} onScanned={handleGachaQRScanned} onClose={() => setShowGachaScanner(false)} />}
       {showGradeSettings && <GradeSettingsModal onClose={() => { setShowGradeSettings(false); refreshGrades() }} />}
 
       {/* 헤더 */}
@@ -350,6 +360,11 @@ export default function SaleInput({ onDone }) {
         <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 입력</h1>
         {saleMode === 'normal' && (
           <button onClick={() => setShowScanner(true)} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
+            <ScanLine size={16} /> QR 스캔
+          </button>
+        )}
+        {saleMode === 'gacha' && (
+          <button onClick={() => setShowGachaScanner(true)} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
             <ScanLine size={16} /> QR 스캔
           </button>
         )}
