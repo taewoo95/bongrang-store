@@ -28,6 +28,19 @@
 ### 데모
 🌐 **[라이브 데모 보기](https://inventory-app-bongrang.vercel.app)**
 
+### 프로젝트 구조
+
+| 파일 / 폴더 | 설명 |
+|---|---|
+| `public/` | 정적 파일 (아이콘, PWA 매니페스트 등) |
+| `src/` | 앱 소스코드 전체 |
+| `src/components/` | 화면별 컴포넌트 (상품관리, 판매, 내역 등) |
+| `src/store.js` | localStorage 기반 데이터 저장·불러오기 로직 |
+| `src/App.jsx` | 앱 루트 및 탭 네비게이션 |
+| `index.html` | HTML 진입점 |
+| `vite.config.js` | Vite 빌드 설정 및 PWA 플러그인 구성 |
+| `package.json` | 프로젝트 의존성 및 실행 스크립트 |
+
 ---
 
 ## English
@@ -53,6 +66,19 @@ All data is stored locally in the browser (localStorage) — no server or accoun
 
 ### Live Demo
 🌐 **[View Live Demo](https://inventory-app-bongrang.vercel.app)**
+
+### Project Structure
+
+| File / Folder | Description |
+|---|---|
+| `public/` | Static assets (icons, PWA manifest, etc.) |
+| `src/` | All application source code |
+| `src/components/` | Screen components (Products, Sales, History, etc.) |
+| `src/store.js` | Data read/write logic using localStorage |
+| `src/App.jsx` | App root and tab navigation |
+| `index.html` | HTML entry point |
+| `vite.config.js` | Vite build config and PWA plugin setup |
+| `package.json` | Dependencies and run scripts |
 
 ---
 
