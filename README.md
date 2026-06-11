@@ -104,3 +104,25 @@ Manage grade-based pricing, QR code scanning, and sales history filtering — ev
 
 ## License
 MIT
+
+---
+
+## 💝 이 앱이 사용되는 곳 / Where This App Is Used
+
+아내 상점 운영을 옆에서 도와주다 보니 "이건 내가 만들어줄 수 있겠는데?" 했고,  
+결국 AI 도움을 받아 여기까지 왔습니다! 😄
+
+🛍️ **네이버 스마트스토어** — [봉랑2 쇼핑몰 바로가기](https://smartstore.naver.com/bongrang2)  
+📸 **인스타그램** — [@bongrang2_12](https://www.instagram.com/bongrang2_12/)
+
+> 매일 열심히 운영하는 거 보면 멋있다! 화이팅!! 💕
+
+---
+
+Helped out at my wife's shop one day and thought "I could build something for this."  
+So I did — with a little help from AI! 😄
+
+🛍️ **Naver Smart Store** — [Visit Bongrang2 Shop](https://smartstore.naver.com/bongrang2)  
+📸 **Instagram** — [@bongrang2_12](https://www.instagram.com/bongrang2_12/)
+
+> Watching you run the shop every day is amazing. Keep it up!! 💕
