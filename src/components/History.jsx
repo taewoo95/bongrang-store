@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import { getSales, deleteSale, updateSale, getProducts, getGachaSales, deleteGachaSale } from '../store'
 import { CalendarDays, Trash2, Edit2, X, Check, Download } from 'lucide-react'
+import { useLang } from '../LangContext'
 
 function toDate(iso) {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -114,6 +115,7 @@ function EditModal({ sale, onClose, onSaved }) {
 }
 
 export default function History() {
+  const { t, fmt } = useLang()
   const [sales, setSales] = useState(getSales)
   const [gachaSales, setGachaSales] = useState(getGachaSales)
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
@@ -191,14 +193,14 @@ export default function History() {
   const safeName = (s) => String(s).replace(/[\n\r\t]/g, ' ').slice(0, 60)
 
   const handleDelete = (sale) => {
-    if (!confirm(`"${safeName(sale.productName)}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
+    if (!confirm(t('hist_cancel_confirm', safeName(sale.productName), sale.qty))) return
     deleteSale(sale.id)
     refresh()
   }
 
   const handleDeleteGacha = (gs) => {
-    const names = gs.products.map(p => `${safeName(p.productName)} ${p.qty}개`).join(', ')
-    if (!confirm(`뽑기 판매(${safeName(gs.gradeName)}) 기록을 취소할까요?\n재고 복구: ${names}`)) return
+    const names = gs.products.map(p => `${safeName(p.productName)} ${p.qty}${t('pcs')}`).join(', ')
+    if (!confirm(t('hist_cancel_gacha_confirm', safeName(gs.gradeName), names))) return
     deleteGachaSale(gs.id)
     refresh()
   }
@@ -248,7 +250,7 @@ export default function History() {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 내역</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('hist_title')}</h1>
         <button
           onClick={handleExportCSV}
           disabled={totalCount === 0}
@@ -261,7 +263,7 @@ export default function History() {
             cursor: totalCount > 0 ? 'pointer' : 'default',
           }}
         >
-          <Download size={15} /> CSV 내보내기
+          <Download size={15} /> {t('hist_export')}
         </button>
       </div>
 
@@ -304,15 +306,15 @@ export default function History() {
       {/* 합계 카드 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
         <div style={{ background: '#6366f1', borderRadius: '14px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 매출</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{totalRevenue.toLocaleString()}원</div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>일반 {filteredNormal.length}건 · 뽑기 {filteredGacha.length}건</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>{t('hist_total_revenue')}</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{fmt(totalRevenue)}</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{t('hist_regular')} {filteredNormal.length} · {t('hist_gacha')} {filteredGacha.length}</div>
         </div>
         <div style={{ background: '#10b981', borderRadius: '14px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>총 이익</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{totalProfit.toLocaleString()}원</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>{t('hist_total_profit')}</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{fmt(totalProfit)}</div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
-            이익률 {totalRevenue > 0 ? Math.round(totalProfit / totalRevenue * 100) : 0}%
+            {t('dash_margin', totalRevenue > 0 ? Math.round(totalProfit / totalRevenue * 100) : 0)}
           </div>
         </div>
       </div>
@@ -321,8 +323,8 @@ export default function History() {
       {/* 목록 헤더 — 필터 버튼 */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '10px', gap: '6px' }}>
         {[
-          { key: 'all', label: '전체' },
-          { key: 'gacha', label: '뽑기' },
+          { key: 'all', label: t('hist_filter_all') },
+          { key: 'gacha', label: t('hist_filter_gacha') },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setTypeFilter(key)} style={{
             padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
@@ -337,7 +339,7 @@ export default function History() {
 
       {totalCount === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-          <p>해당 기간에 판매 내역이 없어요</p>
+          <p>{t('hist_no_sales')}</p>
         </div>
       ) : (
         sortedDates.map(date => {
@@ -350,7 +352,7 @@ export default function History() {
                   {toDate(daySales[0].time)}
                 </span>
                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>
-                  {dayTotal.toLocaleString()}원
+                  {fmt(dayTotal)}
                 </span>
               </div>
               <div style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
@@ -368,19 +370,19 @@ export default function History() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                              <span style={{ background: '#818cf8', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>뽑기</span>
+                              <span style={{ background: '#818cf8', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>{t('hist_gacha')}</span>
                               <span style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.gradeName}</span>
                             </div>
                             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
                               {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                              {' · '}{s.products.map(p => `${p.productName} ${p.qty}개`).join(', ')}
+                              {' · '}{s.products.map(p => `${p.productName} ${p.qty}${t('pcs')}`).join(', ')}
                             </div>
                             <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                              이익 {(s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0)).toLocaleString()}원
+                              {t('anal_profit')} {fmt(s.gradePrice - s.products.reduce((a, p) => a + (p.costPrice || 0) * p.qty, 0))}
                             </div>
                           </div>
                           <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                            {s.gradePrice.toLocaleString()}원
+                            {fmt(s.gradePrice)}
                           </div>
                         </div>
                         {isOpen && (
@@ -389,7 +391,7 @@ export default function History() {
                               onClick={() => handleDeleteGacha(s)}
                               style={{ flex: 1, background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
                             >
-                              <Trash2 size={14} /> 삭제
+                              <Trash2 size={14} /> {t('hist_cancel')}
                             </button>
                           </div>
                         )}
@@ -402,14 +404,14 @@ export default function History() {
                             <div style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>{s.productName}</div>
                             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
                               {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                              {' · '}{s.qty}개 × {s.unitPrice.toLocaleString()}원
+                              {' · '}{s.qty}{t('pcs')} × {fmt(s.unitPrice)}
                             </div>
                             <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
-                              이익 {(s.totalPrice - s.costPrice * s.qty).toLocaleString()}원
+                              {t('anal_profit')} {fmt(s.totalPrice - s.costPrice * s.qty)}
                             </div>
                           </div>
                           <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
-                            {s.totalPrice.toLocaleString()}원
+                            {fmt(s.totalPrice)}
                           </div>
                         </div>
                         {isOpen && (
@@ -418,13 +420,13 @@ export default function History() {
                               onClick={() => setEditSale(s)}
                               style={{ flex: 1, background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
                             >
-                              <Edit2 size={14} /> 수정
+                              <Edit2 size={14} /> {t('edit')}
                             </button>
                             <button
                               onClick={() => handleDelete(s)}
                               style={{ flex: 1, background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13px', fontWeight: '600' }}
                             >
-                              <Trash2 size={14} /> 삭제
+                              <Trash2 size={14} /> {t('hist_cancel')}
                             </button>
                           </div>
                         )}

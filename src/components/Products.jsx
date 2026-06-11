@@ -13,10 +13,12 @@ import { useState, useRef, useEffect } from 'react'
 import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, addCategory, deleteCategory, reorderCategories } from '../store'
 import { Plus, Edit2, Trash2, X, Check, AlertTriangle, Tag, ChevronDown, ChevronUp, GripVertical, QrCode } from 'lucide-react'
 import { QRViewModal } from './QRModal'
+import { useLang } from '../LangContext'
 
 const EMPTY_FORM = { name: '', categoryId: '', costPrice: '', sellPrice: '', stock: '', lowStockAlert: '5' }
 
 export default function Products() {
+  const { t, fmt } = useLang()
   const sortedProducts = () => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko'))
   const [products, setProducts] = useState(sortedProducts)
   const [categories, setCategories] = useState(getCategories)
@@ -35,7 +37,7 @@ export default function Products() {
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
   const handleSubmit = () => {
-    if (!form.name || !form.sellPrice) return alert('상품명과 판매가는 필수입니다.')
+    if (!form.name || !form.sellPrice) return alert(t('prod_form_required'))
     const categoryId = form.categoryId || null
     const duplicate = products.find(p =>
       p.name.trim() === form.name.trim() &&
@@ -43,8 +45,8 @@ export default function Products() {
       p.id !== editId
     )
     if (duplicate) {
-      const catName = categoryId ? categories.find(c => c.id === categoryId)?.name : '미분류'
-      return alert(`"${form.name}" 상품이 [${catName}] 카테고리에 이미 있어요.`)
+      const catName = categoryId ? categories.find(c => c.id === categoryId)?.name : t('prod_uncategorized')
+      return alert(t('prod_form_duplicate', form.name, catName))
     }
     const data = {
       name: form.name,
@@ -65,7 +67,7 @@ export default function Products() {
   }
 
   const handleDelete = (id) => {
-    if (!confirm('정말 삭제할까요?')) return
+    if (!confirm(t('confirm_delete'))) return
     deleteProduct(id); refresh()
   }
 
@@ -76,7 +78,7 @@ export default function Products() {
   }
 
   const handleDeleteCategory = (id) => {
-    if (!confirm('카테고리를 삭제하면 소속 상품의 카테고리가 해제돼요. 계속할까요?')) return
+    if (!confirm(t('prod_cat_delete_confirm'))) return
     deleteCategory(id); refresh()
   }
 
@@ -233,7 +235,7 @@ export default function Products() {
   if (activeCat === 'all') {
     categories.forEach(c => { grouped[c.id] = { cat: c, items: products.filter(p => p.categoryId === c.id) } })
     const uncategorized = products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId))
-    if (uncategorized.length > 0) grouped['none'] = { cat: { id: 'none', name: '미분류' }, items: uncategorized }
+    if (uncategorized.length > 0) grouped['none'] = { cat: { id: 'none', name: t('prod_uncategorized') }, items: uncategorized }
   }
 
   const inputStyle = { width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', background: '#f8fafc' }
@@ -252,12 +254,12 @@ export default function Products() {
             {p.stock <= p.lowStockAlert && p.lowStockAlert > 0 && <AlertTriangle size={13} color="#ef4444" />}
           </div>
           <div style={{ marginTop: '6px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>원가: <b style={{ color: '#1e293b' }}>{p.costPrice.toLocaleString()}원</b></span>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>판매가: <b style={{ color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</b></span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>{t('prod_cost')}: <b style={{ color: '#1e293b' }}>{fmt(p.costPrice)}</b></span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>{t('prod_price')}: <b style={{ color: '#6366f1' }}>{fmt(p.sellPrice)}</b></span>
           </div>
           <div style={{ marginTop: '4px', display: 'flex', gap: '12px' }}>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>재고: <b style={{ color: p.stock <= p.lowStockAlert && p.lowStockAlert > 0 ? '#ef4444' : '#1e293b' }}>{p.stock}개</b></span>
-            <span style={{ fontSize: '12px', color: '#10b981' }}>마진: {p.sellPrice - p.costPrice > 0 ? `${(p.sellPrice - p.costPrice).toLocaleString()}원 (${Math.round((p.sellPrice - p.costPrice) / p.sellPrice * 100)}%)` : '-'}</span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>{t('prod_stock')}: <b style={{ color: p.stock <= p.lowStockAlert && p.lowStockAlert > 0 ? '#ef4444' : '#1e293b' }}>{p.stock}{t('pcs')}</b></span>
+            <span style={{ fontSize: '12px', color: '#10b981' }}>Margin: {p.sellPrice - p.costPrice > 0 ? `${fmt(p.sellPrice - p.costPrice)} (${Math.round((p.sellPrice - p.costPrice) / p.sellPrice * 100)}%)` : '-'}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '6px', marginLeft: '10px' }}>
@@ -276,12 +278,12 @@ export default function Products() {
 
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>상품 관리</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('prod_title')}</h1>
         <button
           onClick={() => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true) }}
           style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}
         >
-          <Plus size={16} /> 상품 추가
+          <Plus size={16} /> {t('prod_add')}
         </button>
       </div>
 
@@ -293,8 +295,8 @@ export default function Products() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Tag size={15} color="#6366f1" />
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>카테고리 관리</span>
-            <span style={{ fontSize: '12px', color: '#94a3b8', background: '#f1f5f9', borderRadius: '20px', padding: '2px 8px' }}>{categories.length}개</span>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>{t('prod_cat_mgmt')}</span>
+            <span style={{ fontSize: '12px', color: '#94a3b8', background: '#f1f5f9', borderRadius: '20px', padding: '2px 8px' }}>{categories.length}{t('pcs')}</span>
           </div>
           {showCatPanel ? <ChevronUp size={16} color="#94a3b8" /> : <ChevronDown size={16} color="#94a3b8" />}
         </button>
@@ -307,18 +309,18 @@ export default function Products() {
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
-                placeholder="새 카테고리명 입력"
+                placeholder={t('prod_cat_name')}
                 style={{ ...inputStyle, padding: '10px 12px', fontSize: '14px' }}
               />
               <button onClick={handleAddCategory} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '10px 14px', fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Plus size={14} /> 추가
+                <Plus size={14} /> {t('add')}
               </button>
             </div>
 
             {/* 드래그 안내 팝업 */}
             {showDragHint && (
               <div style={{ background: 'rgba(0,0,0,0.72)', color: '#fff', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', textAlign: 'center', marginBottom: '4px', pointerEvents: 'none' }}>
-                ☰ 왼쪽을 눌러 이동시키세요
+                ☰ {t('prod_cat_hint')}
               </div>
             )}
 
@@ -362,7 +364,7 @@ export default function Products() {
                     </div>
                     <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', flex: 1 }}>{c.name}</span>
                     <span style={{ fontSize: '12px', color: '#94a3b8', background: '#e2e8f0', borderRadius: '20px', padding: '2px 8px' }}>
-                      {products.filter(p => p.categoryId === c.id).length}개
+                      {products.filter(p => p.categoryId === c.id).length}{t('pcs')}
                     </span>
                     <button onClick={() => handleDeleteCategory(c.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '6px', padding: '4px 6px', display: 'flex', alignItems: 'center' }}>
                       <Trash2 size={12} />
@@ -381,43 +383,43 @@ export default function Products() {
           onClick={e => { if (e.target === e.currentTarget) { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) } }}>
           <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: '700' }}>{editId ? '상품 수정' : '새 상품 추가'}</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: '700' }}>{editId ? t('prod_edit_title') : t('prod_add_title')}</h3>
               <button onClick={() => { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) }} style={{ background: 'none', color: '#94a3b8' }}><X size={22} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={labelStyle}>상품명 *</label>
-                <input style={inputStyle} placeholder="예: 고양이 키링" value={form.name} maxLength={50} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <label style={labelStyle}>{t('prod_form_name')} *</label>
+                <input style={inputStyle} placeholder={t('prod_form_name')} value={form.name} maxLength={50} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
-                <label style={labelStyle}>카테고리</label>
+                <label style={labelStyle}>{t('prod_form_category')}</label>
                 <select style={{ ...inputStyle, color: form.categoryId ? '#1e293b' : '#94a3b8' }} value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
-                  <option value="">카테고리 없음</option>
+                  <option value="">{t('prod_uncategorized')}</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={labelStyle}>원가 (원)</label>
+                  <label style={labelStyle}>{t('prod_form_cost')}</label>
                   <input style={inputStyle} type="number" placeholder="0" value={form.costPrice} onChange={e => setForm(f => ({ ...f, costPrice: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={labelStyle}>판매가 (원) *</label>
+                  <label style={labelStyle}>{t('prod_form_price')} *</label>
                   <input style={inputStyle} type="number" placeholder="0" value={form.sellPrice} onChange={e => setForm(f => ({ ...f, sellPrice: e.target.value }))} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={labelStyle}>현재 재고 (개)</label>
+                  <label style={labelStyle}>{t('prod_form_stock')}</label>
                   <input style={inputStyle} type="number" placeholder="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={labelStyle}>부족 알림 기준 (개)</label>
+                  <label style={labelStyle}>{t('prod_form_alert')}</label>
                   <input style={inputStyle} type="number" placeholder="5" value={form.lowStockAlert} onChange={e => setForm(f => ({ ...f, lowStockAlert: e.target.value }))} />
                 </div>
               </div>
               <button onClick={handleSubmit} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '16px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Check size={18} /> {editId ? '수정 완료' : '추가 완료'}
+                <Check size={18} /> {editId ? t('edit') : t('add')}
               </button>
             </div>
           </div>
@@ -426,7 +428,7 @@ export default function Products() {
 
       {/* 카테고리 필터 탭 */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => {
+        {[{ id: 'all', name: t('all') }, ...categories, { id: 'none', name: t('prod_uncategorized') }].map(c => {
           const count = c.id === 'all' ? products.length
             : c.id === 'none' ? products.filter(p => !p.categoryId).length
             : products.filter(p => p.categoryId === c.id).length
@@ -457,8 +459,8 @@ export default function Products() {
       {/* 상품 목록 */}
       {products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-          <p style={{ fontSize: '15px' }}>등록된 상품이 없어요</p>
-          <p style={{ fontSize: '13px', marginTop: '8px' }}>위의 상품 추가 버튼을 눌러주세요</p>
+          <p style={{ fontSize: '15px' }}>{t('prod_no_items')}</p>
+          <p style={{ fontSize: '13px', marginTop: '8px' }}>{t('prod_no_items_sub')}</p>
         </div>
       ) : activeCat === 'all' ? (
         // 카테고리별 그룹 표시
@@ -468,7 +470,7 @@ export default function Products() {
             <button onClick={() => toggleCollapse(cat.id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', padding: '4px 0', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}>{cat.name}</span>
-                <span style={{ fontSize: '12px', color: '#94a3b8', background: '#f1f5f9', borderRadius: '20px', padding: '2px 8px' }}>{items.length}개</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', background: '#f1f5f9', borderRadius: '20px', padding: '2px 8px' }}>{items.length}{t('pcs')}</span>
               </div>
               {collapsedCats[cat.id] ? <ChevronDown size={16} color="#94a3b8" /> : <ChevronUp size={16} color="#94a3b8" />}
             </button>

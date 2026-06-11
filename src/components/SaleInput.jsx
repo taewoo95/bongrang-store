@@ -11,6 +11,7 @@ import { useState, useRef, useLayoutEffect } from 'react'
 import { getProducts, getCategories, getGachaGrades, addGachaGrade, deleteGachaGrade, updateGachaGrade, addSale, addGachaSale, deductStock } from '../store'
 import { ShoppingCart, Check, Plus, Minus, Trash2, ChevronDown, ChevronUp, ScanLine, Gift, Settings, X, Edit2 } from 'lucide-react'
 import { QRScanModal } from './QRModal'
+import { useLang } from '../LangContext'
 
 // ── 뽑기 등수 관리 모달 ─────────────────────────────────────────
 function GradeSettingsModal({ onClose }) {
@@ -87,7 +88,7 @@ function GradeSettingsModal({ onClose }) {
 }
 
 // ── 공통 상품 선택 UI (컴포넌트 외부 정의 — 내부 정의 시 매 렌더마다 remount) ──
-function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }) {
+function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha, fmt, t }) {
   const inCart = isGacha ? gachaCart.find(c => c.product.id === p.id) : cart.find(c => c.product.id === p.id)
   const outOfStock = p.stock <= 0
   const disabled = outOfStock || (isGacha && gachaRemaining <= 0 && !inCart)
@@ -106,12 +107,12 @@ function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onA
       <div>
         <div style={{ fontSize: '15px', fontWeight: '600', color: outOfStock ? '#94a3b8' : '#1e293b' }}>{p.name}</div>
         <div style={{ fontSize: '12px', color: outOfStock ? '#ef4444' : '#94a3b8', marginTop: '2px', fontWeight: outOfStock ? '600' : '400' }}>
-          {outOfStock ? '재고 없음' : `재고 ${p.stock}개`}
+          {outOfStock ? (t ? t('prod_low_stock') : '재고 없음') : `${t ? t('sale_stock_label') : '재고'} ${p.stock}${t ? t('pcs') : '개'}`}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {inCart && <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>{inCart.qty}개</span>}
-        {!isGacha && <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{p.sellPrice.toLocaleString()}원</span>}
+        {inCart && <span style={{ background: '#6366f1', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '13px', fontWeight: '700' }}>{inCart.qty}{t ? t('pcs') : '개'}</span>}
+        {!isGacha && <span style={{ fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>{fmt ? fmt(p.sellPrice) : `${p.sellPrice.toLocaleString()}원`}</span>}
         <div style={{ width: '28px', height: '28px', background: inCart ? '#6366f1' : '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Plus size={16} color={inCart ? '#fff' : '#94a3b8'} />
         </div>
@@ -120,16 +121,16 @@ function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onA
   )
 }
 
-function ProductList({ isGacha, products, categories, activeCat, setActiveCat, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }) {
+function ProductList({ isGacha, products, categories, activeCat, setActiveCat, cart, gachaCart, gachaRemaining, onAdd, onAddGacha, fmt, t }) {
   if (products.length === 0) {
-    return <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>등록된 상품이 없어요.</div>
+    return <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>{t ? t('sale_no_items') : '등록된 상품이 없어요.'}</div>
   }
   const validCatIds = new Set(categories.map(c => c.id))
-  const btnProps = { isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha }
+  const btnProps = { isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha, fmt, t }
   return (
     <>
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {[{ id: 'all', name: '전체' }, ...categories, { id: 'none', name: '미분류' }].map(c => (
+        {[{ id: 'all', name: t ? t('all') : '전체' }, ...categories, { id: 'none', name: t ? t('prod_uncategorized') : '미분류' }].map(c => (
           <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
             padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
             background: activeCat === c.id ? '#6366f1' : '#fff', color: activeCat === c.id ? '#fff' : '#64748b',
@@ -140,7 +141,7 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
       {activeCat === 'all' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {[...categories.map(c => ({ cat: c, items: products.filter(p => p.categoryId === c.id) })),
-            { cat: { id: 'none', name: '미분류' }, items: products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId)) }]
+            { cat: { id: 'none', name: t ? t('prod_uncategorized') : '미분류' }, items: products.filter(p => !p.categoryId || !validCatIds.has(p.categoryId)) }]
             .filter(s => s.items.length > 0)
             .map(({ cat, items }) => (
               <div key={cat.id}>
@@ -163,6 +164,7 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
 
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function SaleInput({ onDone }) {
+  const { t, fmt } = useLang()
   const [products] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
   const [categories] = useState(getCategories)
   const [saleMode, setSaleMode] = useState('normal') // 'normal' | 'gacha'
@@ -247,10 +249,10 @@ export default function SaleInput({ onDone }) {
   const totalItems = cart.reduce((sum, c) => sum + c.qty, 0)
 
   const handleSell = () => {
-    if (cart.length === 0) return alert('판매할 상품을 담아주세요.')
+    if (cart.length === 0) return alert(t('sale_empty_cart'))
     const safeName = (s) => String(s).replace(/[\n\r\t]/g, ' ').slice(0, 60)
     for (const c of cart) {
-      if (c.product.stock < c.qty) return alert(`"${safeName(c.product.name)}" 재고가 부족해요.\n현재 재고: ${c.product.stock}개, 판매 수량: ${c.qty}개`)
+      if (c.product.stock < c.qty) return alert(t('sale_low_stock_err', safeName(c.product.name), c.product.stock, c.qty))
       if (c.unitPrice <= 0) return alert(`"${c.product.name}"의 판매가를 확인해주세요.`)
     }
     const saleTime = new Date().toISOString()
@@ -305,17 +307,17 @@ export default function SaleInput({ onDone }) {
         <div style={{ width: '80px', height: '80px', background: '#d1fae5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <Check size={40} color="#10b981" />
         </div>
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b', marginBottom: '16px' }}>판매 완료!</h2>
+        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b', marginBottom: '16px' }}>{t('sale_complete')}!</h2>
         <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
           {doneData.cart.map(c => (
             <div key={c.product.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
               <span style={{ fontSize: '14px', color: '#475569' }}>{c.product.name} × {c.qty}</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{fmt(c.unitPrice * c.qty)}</span>
             </div>
           ))}
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px' }}>
-            <span style={{ fontSize: '16px', fontWeight: '700' }}>합계</span>
-            <span style={{ fontSize: '20px', fontWeight: '700', color: '#6366f1' }}>{doneData.totalAmount.toLocaleString()}원</span>
+            <span style={{ fontSize: '16px', fontWeight: '700' }}>{t('sale_total')}</span>
+            <span style={{ fontSize: '20px', fontWeight: '700', color: '#6366f1' }}>{fmt(doneData.totalAmount)}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -332,8 +334,8 @@ export default function SaleInput({ onDone }) {
         <div style={{ width: '80px', height: '80px', background: '#ede9fe', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <Gift size={40} color="#6366f1" />
         </div>
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>뽑기 완료!</h2>
-        <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>{gachaDoneData.gradeName} · {gachaDoneData.gradePrice.toLocaleString()}원</p>
+        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>{t('sale_gacha_complete')}!</h2>
+        <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>{gachaDoneData.gradeName} · {fmt(gachaDoneData.gradePrice)}</p>
         <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
           {gachaDoneData.cart.map(c => (
             <div key={c.product.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
@@ -342,8 +344,8 @@ export default function SaleInput({ onDone }) {
             </div>
           ))}
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px' }}>
-            <span style={{ fontSize: '16px', fontWeight: '700' }}>뽑기 가격</span>
-            <span style={{ fontSize: '20px', fontWeight: '700', color: '#6366f1' }}>{gachaDoneData.gradePrice.toLocaleString()}원</span>
+            <span style={{ fontSize: '16px', fontWeight: '700' }}>{t('sale_gacha')}</span>
+            <span style={{ fontSize: '20px', fontWeight: '700', color: '#6366f1' }}>{fmt(gachaDoneData.gradePrice)}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -363,7 +365,7 @@ export default function SaleInput({ onDone }) {
 
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>판매 입력</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('tab_sale')}</h1>
         {saleMode === 'normal' && (
           <button onClick={() => setShowScanner(true)} style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
             <ScanLine size={16} /> QR 스캔
@@ -378,7 +380,7 @@ export default function SaleInput({ onDone }) {
 
       {/* 모드 전환 탭 */}
       <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-        {[{ id: 'normal', label: '일반 판매', icon: <ShoppingCart size={15} /> }, { id: 'gacha', label: '뽑기 판매', icon: <Gift size={15} /> }].map(m => (
+        {[{ id: 'normal', label: t('sale_regular'), icon: <ShoppingCart size={15} /> }, { id: 'gacha', label: t('sale_gacha'), icon: <Gift size={15} /> }].map(m => (
           <button key={m.id} onClick={() => setSaleMode(m.id)} style={{
             flex: 1, padding: '10px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
             background: saleMode === m.id ? '#fff' : 'transparent',
@@ -400,7 +402,7 @@ export default function SaleInput({ onDone }) {
               {/* 헤더 */}
               <div style={{ padding: '12px 16px', background: '#eef2ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca' }}>🛒 {cart.length}종 · {totalItems}개</span>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{totalAmount.toLocaleString()}원</span>
+                <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{fmt(totalAmount)}</span>
               </div>
               {/* 상품 행 */}
               {cart.map((c, i) => (
@@ -411,7 +413,7 @@ export default function SaleInput({ onDone }) {
                   {/* 1행: 상품명 + 소계 + 삭제 */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1 }}>{c.product.name}</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', flexShrink: 0, whiteSpace: 'nowrap' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', flexShrink: 0, whiteSpace: 'nowrap' }}>{fmt(c.unitPrice * c.qty)}</span>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                   </div>
                   {/* 2행: 수량 + × + 단가입력 + 원 */}
@@ -428,7 +430,7 @@ export default function SaleInput({ onDone }) {
                       onChange={e => updatePrice(c.product.id, e.target.value)}
                       style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
                     />
-                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>원</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{fmt(1).replace(/[\d,]/g, '').trim()}</span>
                   </div>
                 </div>
               ))}
@@ -436,10 +438,10 @@ export default function SaleInput({ onDone }) {
           )}
           <div ref={productListRef}>
             <button onClick={() => setExpandProduct(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', padding: '4px 0', marginBottom: '10px' }}>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}>상품 선택</span>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}>{t('sale_select_items')}</span>
               {expandProduct ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
             </button>
-            {expandProduct && <ProductList isGacha={false} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} />}
+            {expandProduct && <ProductList isGacha={false} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} fmt={fmt} t={t} />}
           </div>
         </>
       )}
@@ -450,7 +452,7 @@ export default function SaleInput({ onDone }) {
           {/* 등수 선택 — 가로 스크롤 슬림 칩 */}
           <div style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px 10px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>등수 선택</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>{t('sale_gacha_select_grade')}</span>
               <button onClick={() => setShowGradeSettings(true)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Settings size={12} /> 설정
               </button>
@@ -471,7 +473,7 @@ export default function SaleInput({ onDone }) {
                       minWidth: 0,
                     }}>
                       <span style={{ whiteSpace: 'nowrap' }}>{g.name}</span>
-                      <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.85, whiteSpace: 'nowrap' }}>{g.price.toLocaleString()}원</span>
+                      <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.85, whiteSpace: 'nowrap' }}>{fmt(g.price)}</span>
                     </button>
                   )
                 })}
@@ -527,10 +529,10 @@ export default function SaleInput({ onDone }) {
               {/* 상품 목록 */}
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>
-                  상품 선택
+                  {t('sale_select_items')}
                   {gachaRemaining <= 0 && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '12px', marginLeft: '6px' }}>수량 조절 가능</span>}
                 </div>
-                <ProductList isGacha={true} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} />
+                <ProductList isGacha={true} products={products} categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} cart={cart} gachaCart={gachaCart} gachaRemaining={gachaRemaining} onAdd={addToCart} onAddGacha={addToGachaCart} fmt={fmt} t={t} />
               </div>
             </>
           )}
@@ -551,7 +553,7 @@ export default function SaleInput({ onDone }) {
                       <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
                       <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Plus size={13} /></button>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6366f1', minWidth: '64px', textAlign: 'right' }}>{(c.unitPrice * c.qty).toLocaleString()}원</span>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6366f1', minWidth: '64px', textAlign: 'right' }}>{fmt(c.unitPrice * c.qty)}</span>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', padding: '2px' }}><Trash2 size={14} /></button>
                   </div>
                 </div>
@@ -564,7 +566,7 @@ export default function SaleInput({ onDone }) {
               <span style={{ fontSize: '11px', fontWeight: '700', color: '#6366f1' }}>{totalItems}개</span>
             </button>
             <button onClick={handleSell} style={{ flex: 1, background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <ShoppingCart size={18} />{totalAmount.toLocaleString()}원 판매 완료
+              <ShoppingCart size={18} />{fmt(totalAmount)} {t('sale_complete')}
             </button>
           </div>
         </div>
@@ -575,7 +577,7 @@ export default function SaleInput({ onDone }) {
         <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: '#fff', borderTop: '1px solid #e2e8f0', zIndex: 99, padding: '12px 16px', paddingBottom: 'calc(12px + 56px + env(safe-area-inset-bottom))' }}>
           <button onClick={handleGachaSell} style={{ width: '100%', background: gachaRemaining === 0 ? '#6366f1' : '#8b5cf6', color: '#fff', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Gift size={18} />
-            {selectedGrade.name} 뽑기 완료 — {selectedGrade.price.toLocaleString()}원
+            {selectedGrade.name} {t('sale_gacha_complete')} — {fmt(selectedGrade.price)}
             {gachaRemaining > 0 && <span style={{ fontSize: '12px', opacity: 0.8 }}>({gachaRemaining}개 남음)</span>}
           </button>
         </div>

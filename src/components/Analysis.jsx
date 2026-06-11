@@ -9,20 +9,7 @@
 import { useState } from 'react'
 import { getSales, getProducts, getCategories, getGachaSales } from '../store'
 import { TrendingUp, Award, AlertCircle, ChevronDown, ChevronUp, Clock, Tag } from 'lucide-react'
-
-const SORT_OPTIONS = [
-  { key: 'revenue', label: '매출순' },
-  { key: 'qty', label: '판매량순' },
-  { key: 'profit', label: '이익순' },
-  { key: 'profitRate', label: '이익률순' },
-]
-
-const TIME_SLOTS = [
-  { label: '새벽', range: '0~6시', hours: [0,1,2,3,4,5], color: '#818cf8' },
-  { label: '오전', range: '6~12시', hours: [6,7,8,9,10,11], color: '#34d399' },
-  { label: '오후', range: '12~18시', hours: [12,13,14,15,16,17], color: '#f59e0b' },
-  { label: '저녁', range: '18~24시', hours: [18,19,20,21,22,23], color: '#f472b6' },
-]
+import { useLang } from '../LangContext'
 
 function toLocalDate(iso) {
   const d = new Date(iso)
@@ -33,6 +20,7 @@ function toLocalDate(iso) {
 const medal = i => ['🥇','🥈','🥉'][i] ?? `${i+1}`
 
 export default function Analysis() {
+  const { t, fmt } = useLang()
   const sales = getSales()
   const gachaSales = getGachaSales()
   const products = getProducts()
@@ -40,11 +28,25 @@ export default function Analysis() {
   const today = toLocalDate(new Date().toISOString())
   const firstOfMonth = today.slice(0, 7) + '-01'
 
+  const SORT_OPTIONS = [
+    { key: 'revenue', label: t('anal_sort_revenue') },
+    { key: 'qty',     label: t('anal_sort_qty') },
+    { key: 'profit',  label: t('anal_sort_profit') },
+    { key: 'profitRate', label: t('anal_sort_margin') },
+  ]
+
+  const TIME_SLOTS = [
+    { label: t('anal_dawn'),      range: t('anal_dawn_range'),      hours: [0,1,2,3,4,5],       color: '#8b5cf6' },
+    { label: t('anal_morning'),   range: t('anal_morning_range'),   hours: [6,7,8,9,10,11],     color: '#6366f1' },
+    { label: t('anal_afternoon'), range: t('anal_afternoon_range'), hours: [12,13,14,15,16,17], color: '#f59e0b' },
+    { label: t('anal_evening'),   range: t('anal_evening_range'),   hours: [18,19,20,21,22,23], color: '#ef4444' },
+  ]
+
   const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
   const [sortKey, setSortKey] = useState('revenue')
   const [showNeverSold, setShowNeverSold] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState(null) // 시간대 드릴다운
+  const [selectedSlot, setSelectedSlot] = useState(null)
   const [showAllProducts, setShowAllProducts] = useState(false)
 
   const filtered = sales.filter(s => {
@@ -96,7 +98,7 @@ export default function Analysis() {
   filtered.forEach(s => {
     const product = products.find(p => p.id === s.productId)
     const catId = product?.categoryId ?? 'none'
-    const catName = catId === 'none' ? '미분류' : (categories.find(c => c.id === catId)?.name ?? '미분류')
+    const catName = catId === 'none' ? t('anal_uncategorized') : (categories.find(c => c.id === catId)?.name ?? t('anal_uncategorized'))
     if (!byCat[catName]) byCat[catName] = { revenue: 0, qty: 0 }
     byCat[catName].revenue += s.totalPrice
     byCat[catName].qty     += s.qty
@@ -106,7 +108,7 @@ export default function Analysis() {
     gs.products.forEach(p => {
       const product = products.find(pr => pr.id === p.productId)
       const catId = product?.categoryId ?? 'none'
-      const catName = catId === 'none' ? '미분류' : (categories.find(c => c.id === catId)?.name ?? '미분류')
+      const catName = catId === 'none' ? t('anal_uncategorized') : (categories.find(c => c.id === catId)?.name ?? t('anal_uncategorized'))
       if (!byCat[catName]) byCat[catName] = { revenue: 0, qty: 0 }
       byCat[catName].qty += p.qty
       const share = totalCostInGacha > 0
@@ -160,11 +162,11 @@ export default function Analysis() {
     </div>
   )
 
-  const noData = <p style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: '14px' }}>데이터가 없어요</p>
+  const noData = <p style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: '14px' }}>{t('anal_no_sales')}</p>
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: '700' }}>이익 분석</h1>
+      <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('anal_title')}</h1>
 
       {/* 기간 설정 */}
       <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
@@ -175,15 +177,15 @@ export default function Analysis() {
         </div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[
-            { label: '오늘', fn: () => { setStartDate(today); setEndDate(today) }, active: startDate === today && endDate === today },
-            { label: '이번 달', fn: () => { setStartDate(firstOfMonth); setEndDate(today) }, active: startDate === firstOfMonth && endDate === today },
-            { label: '저번 달', fn: () => {
+            { label: t('today'), fn: () => { setStartDate(today); setEndDate(today) }, active: startDate === today && endDate === today },
+            { label: t('this_month'), fn: () => { setStartDate(firstOfMonth); setEndDate(today) }, active: startDate === firstOfMonth && endDate === today },
+            { label: t('last_month'), fn: () => {
               const d = new Date(); d.setMonth(d.getMonth()-1)
               const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0')
               const last = new Date(y, d.getMonth()+1, 0).getDate()
               setStartDate(`${y}-${m}-01`); setEndDate(`${y}-${m}-${last}`)
             }, active: false },
-            { label: '올해 전체', fn: () => { setStartDate(`${new Date().getFullYear()}-01-01`); setEndDate(today) }, active: startDate === `${new Date().getFullYear()}-01-01` && endDate === today },
+            { label: t('this_year'), fn: () => { setStartDate(`${new Date().getFullYear()}-01-01`); setEndDate(today) }, active: startDate === `${new Date().getFullYear()}-01-01` && endDate === today },
           ].map(btn => (
             <button key={btn.label} onClick={btn.fn} style={{
               background: btn.active ? '#6366f1' : '#f1f5f9',
@@ -198,17 +200,17 @@ export default function Analysis() {
 
       {/* 요약 카드 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        {card('#6366f1', '총 매출', `${totalRevenue.toLocaleString()}원`, `일반 ${filtered.length}건 · 뽑기 ${filteredGacha.length}건`)}
-        {card('#f59e0b', '총 원가', `${totalCost.toLocaleString()}원`, '매입 비용 합계')}
-        {card(totalProfit >= 0 ? '#10b981' : '#ef4444', '총 이익', `${totalProfit.toLocaleString()}원`, `이익률 ${profitRate}%`)}
+        {card('#6366f1', t('anal_total_revenue'), fmt(totalRevenue), `${t('anal_regular', filtered.length)} · ${t('anal_gacha', filteredGacha.length)}`)}
+        {card('#f59e0b', t('anal_total_cost'), fmt(totalCost), t('anal_cost_label'))}
+        {card(totalProfit >= 0 ? '#10b981' : '#ef4444', t('anal_total_profit'), fmt(totalProfit), t('anal_profit_rate', profitRate))}
         <div style={{ background: totalProfit >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>이익률</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>{t('anal_margin')}</div>
           <div style={{ fontSize: '30px', fontWeight: '800', color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}>{profitRate}%</div>
         </div>
       </div>
 
       {/* 카테고리별 매출 비중 */}
-      <Section icon={<Tag size={17} color="#6366f1" />} title="카테고리별 매출 비중">
+      <Section icon={<Tag size={17} color="#6366f1" />} title={t('anal_by_category')}>
         {catList.length === 0 ? noData : catList.map((c, i) => (
           <div key={c.name} style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
@@ -218,7 +220,7 @@ export default function Analysis() {
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>{c.qty}개</span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{Math.round(c.revenue).toLocaleString()}원</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{fmt(Math.round(c.revenue))}</span>
                 <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '6px' }}>{c.pct}%</span>
               </div>
             </div>
@@ -230,7 +232,7 @@ export default function Analysis() {
       </Section>
 
       {/* 시간대별 판매 분포 */}
-      <Section icon={<Clock size={17} color="#6366f1" />} title="시간대별 판매 분포">
+      <Section icon={<Clock size={17} color="#6366f1" />} title={t('anal_by_time')}>
         {filtered.length === 0 && filteredGacha.length === 0 ? noData : (
           <>
             {/* 4구간 막대 */}
@@ -257,7 +259,7 @@ export default function Analysis() {
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{slot.label}</div>
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>{slot.range}</div>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: slot.revenue > 0 ? slot.color : '#cbd5e1' }}>{slot.count}건</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{slot.revenue > 0 ? `${Math.round(slot.revenue).toLocaleString()}원` : '-'}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{slot.revenue > 0 ? fmt(Math.round(slot.revenue)) : '-'}</div>
                 </button>
               ))}
             </div>
@@ -277,7 +279,7 @@ export default function Analysis() {
               return (
                 <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '12px' }}>
-                    {selectedSlot.label} 시간별 상세 ({selectedSlot.range})
+                    {t('anal_drilldown', selectedSlot.label, selectedSlot.range)}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: '80px' }}>
                     {hourlyData.map(({ h, revenue, count }) => (
@@ -302,7 +304,7 @@ export default function Analysis() {
       </Section>
 
       {/* 상품 랭킹 */}
-      <Section icon={<TrendingUp size={17} color="#6366f1" />} title="상품 랭킹">
+      <Section icon={<TrendingUp size={17} color="#6366f1" />} title={t('anal_ranking')}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
           {SORT_OPTIONS.map(opt => (
             <button key={opt.key} onClick={() => setSortKey(opt.key)} style={{
@@ -325,8 +327,8 @@ export default function Analysis() {
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{Math.round(p.revenue).toLocaleString()}원</div>
-                <div style={{ fontSize: '12px', color: '#10b981' }}>이익률 {p.profitRate}%</div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{fmt(Math.round(p.revenue))}</div>
+                <div style={{ fontSize: '12px', color: '#10b981' }}>{t('anal_profit_rate', p.profitRate)}</div>
               </div>
             </div>
             <div style={{ background: '#f1f5f9', borderRadius: '6px', height: '7px', overflow: 'hidden' }}>
@@ -338,8 +340,8 @@ export default function Analysis() {
               }} />
             </div>
             <div style={{ display: 'flex', gap: '12px', fontSize: '12px', marginTop: '4px' }}>
-              <span style={{ color: '#64748b' }}>원가 {Math.round(p.cost).toLocaleString()}원</span>
-              <span style={{ color: p.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>이익 {Math.round(p.profit).toLocaleString()}원</span>
+              <span style={{ color: '#64748b' }}>{t('anal_cost')} {fmt(Math.round(p.cost))}</span>
+              <span style={{ color: p.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>{t('anal_profit_label')} {fmt(Math.round(p.profit))}</span>
             </div>
           </div>
         ))}
@@ -348,26 +350,26 @@ export default function Analysis() {
             onClick={() => setShowAllProducts(v => !v)}
             style={{ width: '100%', marginTop: '4px', padding: '10px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            {showAllProducts ? <><ChevronUp size={15} /> 접기</> : <><ChevronDown size={15} /> {productList.length - 10}개 더 보기</>}
+            {showAllProducts ? <><ChevronUp size={15} /> {t('anal_collapse')}</> : <><ChevronDown size={15} /> {t('anal_show_more', productList.length - 10)}</>}
           </button>
         )}
       </Section>
 
       {/* 전체 요약 */}
-      <Section icon={<Award size={17} color="#f59e0b" />} title="기간 요약">
+      <Section icon={<Award size={17} color="#f59e0b" />} title={t('anal_summary')}>
         {filtered.length === 0 && filteredGacha.length === 0 ? noData : (
           <>
             <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏆 매출 TOP 3</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('anal_revenue_top3')}</p>
               {top3Revenue.map((p, i) => (
                 <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: '10px', marginBottom: '5px', background: i === 0 ? '#eef2ff' : '#f8fafc' }}>
                   <span style={{ fontSize: '14px' }}>{medal(i)} {p.name}</span>
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{Math.round(p.revenue).toLocaleString()}원</span>
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1' }}>{fmt(Math.round(p.revenue))}</span>
                 </div>
               ))}
             </div>
             <div style={{ marginBottom: neverSold.length > 0 ? '16px' : 0 }}>
-              <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💰 이익률 TOP 3</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('anal_margin_top3')}</p>
               {top3Profit.map((p, i) => (
                 <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: '10px', marginBottom: '5px', background: i === 0 ? '#f0fdf4' : '#f8fafc' }}>
                   <span style={{ fontSize: '14px' }}>{medal(i)} {p.name}</span>
@@ -380,7 +382,7 @@ export default function Analysis() {
                 <button onClick={() => setShowNeverSold(v => !v)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', padding: '4px 0' }}>
                   <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <AlertCircle size={13} color="#f59e0b" />
-                    판매 없는 상품
+                    {t('anal_unsold_items')}
                     <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: '20px', padding: '1px 8px', fontSize: '12px', fontWeight: '700' }}>{neverSold.length}</span>
                   </span>
                   {showNeverSold ? <ChevronUp size={15} color="#94a3b8" /> : <ChevronDown size={15} color="#94a3b8" />}

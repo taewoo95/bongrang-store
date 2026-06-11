@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { getProducts, getSales, getGachaSales, exportBackup, importBackup } from '../store'
 import { AlertTriangle, TrendingUp, ShoppingBag, Package, Download, Upload, FilePlus, Smartphone, RefreshCw } from 'lucide-react'
+import { useLang } from '../LangContext'
 
 export default function Dashboard({ onNavigate }) {
+  const { lang, setLang, t, fmt } = useLang()
   const [restoreMsg, setRestoreMsg] = useState(null)
   const fileInputRef = useRef(null)
   const [installPrompt, setInstallPrompt] = useState(null)
@@ -28,7 +30,6 @@ export default function Dashboard({ onNavigate }) {
   const handleForceUpdate = async () => {
     setUpdating(true)
     try {
-      // 모든 서비스워커 캐시 삭제 후 재시작
       const keys = await caches.keys()
       await Promise.all(keys.map(k => caches.delete(k)))
       const regs = await navigator.serviceWorker.getRegistrations()
@@ -43,8 +44,8 @@ export default function Dashboard({ onNavigate }) {
     if (!file) return
     try {
       const result = await importBackup(file)
-      const date = new Date(result.exportedAt).toLocaleDateString('ko-KR')
-      setRestoreMsg(`✅ 복원 완료! 상품 ${result.products}개, 판매내역 ${result.sales}건 (백업일: ${date})`)
+      const date = new Date(result.exportedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR')
+      setRestoreMsg(t('dash_restore_ok', result.products, result.sales, date))
       setTimeout(() => { setRestoreMsg(null); window.location.reload() }, 2000)
     } catch (err) {
       setRestoreMsg(`❌ ${err.message}`)
@@ -52,6 +53,7 @@ export default function Dashboard({ onNavigate }) {
     }
     e.target.value = ''
   }
+
   const products = getProducts()
   const sales = getSales()
   const gachaSales = getGachaSales()
@@ -71,13 +73,40 @@ export default function Dashboard({ onNavigate }) {
     boxShadow: '0 1px 3px rgba(0,0,0,0.07)', ...style
   })
 
+  const dateStr = new Date().toLocaleDateString(
+    lang === 'en' ? 'en-US' : 'ko-KR',
+    { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
+  )
+
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div>
-        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b' }}>재고관리</h1>
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
-          {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-        </p>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#1e293b' }}>{t('dash_title')}</h1>
+          <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>{dateStr}</p>
+        </div>
+        {/* 언어 선택 버튼 */}
+        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+          <button
+            onClick={() => setLang('ko')}
+            style={{
+              padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+              background: lang === 'ko' ? '#6366f1' : '#f1f5f9',
+              color: lang === 'ko' ? '#fff' : '#64748b',
+              border: 'none', cursor: 'pointer',
+            }}
+          >🇰🇷 한국어</button>
+          <button
+            onClick={() => setLang('en')}
+            style={{
+              padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+              background: lang === 'en' ? '#6366f1' : '#f1f5f9',
+              color: lang === 'en' ? '#fff' : '#64748b',
+              border: 'none', cursor: 'pointer',
+            }}
+          >🇺🇸 English</button>
+        </div>
       </div>
 
       {/* 오늘 요약 */}
@@ -85,26 +114,26 @@ export default function Dashboard({ onNavigate }) {
         <div style={card({ background: '#6366f1' })}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <ShoppingBag size={16} color="rgba(255,255,255,0.8)" />
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>오늘 매출</span>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>{t('dash_today_revenue')}</span>
           </div>
           <div style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>
-            {todayRevenue.toLocaleString()}원
+            {fmt(todayRevenue)}
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
-            {todaySales.length + todayGacha.length}건 판매
+            {t('dash_today_sales_count', todaySales.length + todayGacha.length)}
           </div>
         </div>
 
         <div style={card({ background: '#10b981' })}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <TrendingUp size={16} color="rgba(255,255,255,0.8)" />
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>오늘 이익</span>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>{t('dash_today_profit')}</span>
           </div>
           <div style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>
-            {todayProfit.toLocaleString()}원
+            {fmt(todayProfit)}
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
-            이익률 {todayRevenue > 0 ? Math.round(todayProfit / todayRevenue * 100) : 0}%
+            {t('dash_margin', todayRevenue > 0 ? Math.round(todayProfit / todayRevenue * 100) : 0)}
           </div>
         </div>
       </div>
@@ -115,7 +144,7 @@ export default function Dashboard({ onNavigate }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <AlertTriangle size={18} color="#f59e0b" />
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>
-              재고 부족 알림 ({lowStock.length}개 상품)
+              {t('dash_low_stock', lowStock.length)}
             </span>
           </div>
           {lowStock.map(p => (
@@ -128,7 +157,7 @@ export default function Dashboard({ onNavigate }) {
                 fontSize: '13px', fontWeight: '600', color: '#ef4444',
                 background: '#fee2e2', padding: '2px 8px', borderRadius: '20px'
               }}>
-                {p.stock}개 남음
+                {p.stock}{t('dash_left')}
               </span>
             </div>
           ))}
@@ -147,7 +176,7 @@ export default function Dashboard({ onNavigate }) {
           }}
         >
           <ShoppingBag size={18} />
-          판매 입력
+          {t('dash_go_sale')}
         </button>
         <button
           onClick={() => onNavigate('products')}
@@ -159,21 +188,21 @@ export default function Dashboard({ onNavigate }) {
           }}
         >
           <Package size={18} />
-          상품 관리
+          {t('dash_go_products')}
         </button>
       </div>
 
       {/* 백업 / 복원 */}
       <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>데이터 백업 / 복원</h3>
+          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{t('dash_backup_title')}</h3>
           <button
             onClick={handleForceUpdate}
             disabled={updating}
             style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', fontWeight: '600' }}
           >
             <RefreshCw size={13} style={{ animation: updating ? 'spin 1s linear infinite' : 'none' }} />
-            {updating ? '업데이트 중…' : '앱 업데이트'}
+            {updating ? t('dash_updating') : t('dash_update')}
           </button>
         </div>
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
@@ -188,7 +217,7 @@ export default function Dashboard({ onNavigate }) {
             style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', borderRadius: '12px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: '#4338ca', cursor: 'pointer' }}
           >
             <Download size={20} color="#6366f1" />
-            <span style={{ fontSize: '12px', fontWeight: '600' }}>백업 저장</span>
+            <span style={{ fontSize: '12px', fontWeight: '600' }}>{t('dash_backup_save')}</span>
           </button>
 
           <button
@@ -196,7 +225,7 @@ export default function Dashboard({ onNavigate }) {
             style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: '#475569', cursor: 'pointer' }}
           >
             <FilePlus size={20} color="#94a3b8" />
-            <span style={{ fontSize: '12px', fontWeight: '600' }}>날짜별 저장</span>
+            <span style={{ fontSize: '12px', fontWeight: '600' }}>{t('dash_backup_date')}</span>
           </button>
 
           <button
@@ -204,23 +233,23 @@ export default function Dashboard({ onNavigate }) {
             style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '12px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: '#166534', cursor: 'pointer' }}
           >
             <Upload size={20} color="#10b981" />
-            <span style={{ fontSize: '12px', fontWeight: '600' }}>복원</span>
+            <span style={{ fontSize: '12px', fontWeight: '600' }}>{t('dash_restore')}</span>
           </button>
         </div>
         <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
         <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px', textAlign: 'center' }}>
-          백업 파일을 카카오톡·메모앱 등에 저장해두세요
+          {t('dash_backup_tip')}
         </p>
       </div>
 
       {/* 최근 판매 내역 */}
       <div style={card()}>
         <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>
-          최근 판매 내역
+          {t('dash_recent')}
         </h3>
         {sales.length === 0 ? (
           <p style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', padding: '16px 0' }}>
-            아직 판매 기록이 없어요
+            {t('dash_no_sales')}
           </p>
         ) : (
           sales.slice(0, 5).map(s => (
@@ -231,13 +260,13 @@ export default function Dashboard({ onNavigate }) {
               <div>
                 <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '500' }}>{s.productName}</div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                  {new Date(s.time).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  {' · '}{s.qty}개
+                  {new Date(s.time).toLocaleString(lang === 'en' ? 'en-US' : 'ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {' · '}{s.qty}{t('pcs')}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#6366f1' }}>
-                  {s.totalPrice.toLocaleString()}원
+                  {fmt(s.totalPrice)}
                 </div>
               </div>
             </div>
@@ -259,18 +288,18 @@ export default function Dashboard({ onNavigate }) {
             >
               <Smartphone size={22} />
               <div>
-                <div style={{ fontSize: '15px', fontWeight: '700' }}>홈 화면에 앱 추가</div>
-                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>아이콘으로 바로 실행 · 오프라인 지원</div>
+                <div style={{ fontSize: '15px', fontWeight: '700' }}>{t('dash_install')}</div>
+                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>{t('dash_install_sub')}</div>
               </div>
             </button>
           ) : (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                 <Smartphone size={20} color="#6366f1" />
-                <span style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>홈 화면에 앱 추가 (iOS)</span>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>{t('dash_install_ios')}</span>
               </div>
               <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-                Safari 하단 <b>공유 버튼 →</b> <b>"홈 화면에 추가"</b> 를 탭하면 앱처럼 설치돼요.
+                {t('dash_install_ios_guide')}
               </p>
             </div>
           )}
