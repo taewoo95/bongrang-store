@@ -10,6 +10,13 @@
 소규모 매장을 위한 **재고 관리 및 판매 기록 PWA**입니다.  
 별도 서버 없이 기기 내 로컬 저장소(localStorage)에 데이터를 저장하며, 스마트폰에 설치해 오프라인에서도 사용할 수 있습니다.
 
+### PWA란?
+**PWA (Progressive Web App)** 는 웹사이트를 스마트폰 앱처럼 설치해서 사용할 수 있는 기술입니다.  
+- 📲 홈 화면에 아이콘으로 추가 가능 (앱스토어 없이 설치)
+- ✈️ 인터넷 없이도 오프라인으로 동작
+- ⚡ 앱처럼 빠른 실행 속도
+- 💾 별도 용량 차지 없이 가볍게 사용 가능
+
 ### 주요 기능
 - 📋 **상품 관리** — 상품 등록·수정·삭제, 카테고리별 분류, 재고 부족 알림
 - 🗂️ **카테고리 관리** — 카테고리 추가·삭제, 길게 눌러 순서 드래그 변경
@@ -48,6 +55,13 @@
 ### Overview
 A **lightweight inventory & sales management PWA** designed for small shops.  
 All data is stored locally in the browser (localStorage) — no server or account required. Install it on your phone and use it offline.
+
+### What is a PWA?
+**PWA (Progressive Web App)** is a technology that lets you install a website just like a native app on your smartphone.
+- 📲 Add to home screen as an icon — no App Store needed
+- ✈️ Works offline without an internet connection
+- ⚡ Launches instantly, just like a native app
+- 💾 Lightweight — takes up minimal storage
 
 ### Features
 - 📋 **Product Management** — Add, edit, and delete products with category support and low-stock alerts
