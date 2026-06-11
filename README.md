@@ -1,4 +1,4 @@
-# 📦 Inventory App — 재고 & 판매 관리 앱
+# 🏪 소규모 매장 재고·판매 관리 PWA / Small Shop Inventory & Sales Manager
 
 > 🇰🇷 [한국어](#한국어) | 🇺🇸 [English](#english)
 
