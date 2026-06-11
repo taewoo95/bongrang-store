@@ -51,6 +51,16 @@
 | `vite.config.js` | Vite 빌드 설정 및 PWA 플러그인 구성 |
 | `package.json` | 프로젝트 의존성 및 실행 스크립트 |
 
+### 💡 추가 활용 팁
+재고·판매 관리 외에도 이런 용도로도 쓸 수 있어요!
+
+- 🥃 나의 위스키 창고 목록 정리
+- 🃏 나의 OO카드 정리
+- 📦 취미 수집품 관리
+- 🗂️ 뭐든 목록으로 관리하고 싶은 것들
+
+카테고리와 항목만 바꾸면 어디든 활용 가능합니다. 😄
+
 ---
 
 ## English
@@ -99,6 +109,16 @@ Manage grade-based pricing, QR code scanning, and sales history filtering — ev
 | `index.html` | HTML entry point |
 | `vite.config.js` | Vite build config and PWA plugin setup |
 | `package.json` | Dependencies and run scripts |
+
+### 💡 Pro Tips
+Not just for shops — here are some other ways to use it!
+
+- 🥃 My whisky collection tracker
+- 🃏 My card collection organizer
+- 📦 Hobby collection manager
+- 🗂️ Anything you want to keep a list of
+
+Just swap out the categories and items — it works for almost anything. 😄
 
 ---
 
