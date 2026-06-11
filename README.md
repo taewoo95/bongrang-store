@@ -10,6 +10,9 @@
 소규모 매장을 위한 **재고 관리 및 판매 기록 PWA**입니다.  
 별도 서버 없이 기기 내 로컬 저장소(localStorage)에 데이터를 저장하며, 스마트폰에 설치해 오프라인에서도 사용할 수 있습니다.
 
+특히 **뽑기(가챠) 판매**를 운영하는 매장에 최적화되어 있습니다.  
+등급별 가격 설정, QR 코드 스캔, 판매 내역 필터링까지 뽑기 운영에 필요한 기능을 한 번에 관리할 수 있습니다. 🎰
+
 ### PWA란?
 **PWA (Progressive Web App)** 는 웹사이트를 스마트폰 앱처럼 설치해서 사용할 수 있는 기술입니다.  
 - 📲 홈 화면에 아이콘으로 추가 가능 (앱스토어 없이 설치)
@@ -55,6 +58,9 @@
 ### Overview
 A **lightweight inventory & sales management PWA** designed for small shops.  
 All data is stored locally in the browser (localStorage) — no server or account required. Install it on your phone and use it offline.
+
+Especially optimized for shops running **Gacha (blind box) sales**.  
+Manage grade-based pricing, QR code scanning, and sales history filtering — everything you need for gacha operations in one place. 🎰
 
 ### What is a PWA?
 **PWA (Progressive Web App)** is a technology that lets you install a website just like a native app on your smartphone.
