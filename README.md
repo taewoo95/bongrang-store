@@ -35,8 +35,8 @@
 - **localStorage** 기반 데이터 저장 (서버 불필요)
 - **Lucide React** 아이콘
 
-### 데모
-🌐 **[라이브 데모 보기](https://inventory-app-bongrang.vercel.app)**
+### 바로 사용하기
+🌐 **[앱 실행하기](https://inventory-app-bongrang.vercel.app)**
 
 ### 프로젝트 구조
 
@@ -84,8 +84,8 @@ Manage grade-based pricing, QR code scanning, and sales history filtering — ev
 - **localStorage** for data persistence (no backend needed)
 - **Lucide React** icons
 
-### Live Demo
-🌐 **[View Live Demo](https://inventory-app-bongrang.vercel.app)**
+### Try It Now
+🌐 **[Launch App](https://inventory-app-bongrang.vercel.app)**
 
 ### Project Structure
 
