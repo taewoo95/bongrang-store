@@ -12,8 +12,21 @@ export function getCategories() {
   return JSON.parse(localStorage.getItem('categories') || '[]')
 }
 
+// localStorage 저장 시 용량 초과 에러를 명시적으로 처리
+function safeSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      alert('저장 공간이 부족합니다. 오래된 데이터를 정리해주세요.')
+      throw new Error('저장 공간 초과')
+    }
+    throw e
+  }
+}
+
 export function saveCategories(categories) {
-  localStorage.setItem('categories', JSON.stringify(categories))
+  safeSet('categories', categories)
 }
 
 export function addCategory(name) {
@@ -41,7 +54,7 @@ export function getProducts() {
 }
 
 export function saveProducts(products) {
-  localStorage.setItem('products', JSON.stringify(products))
+  safeSet('products', products)
 }
 
 export function getSales() {
@@ -49,7 +62,7 @@ export function getSales() {
 }
 
 export function saveSales(sales) {
-  localStorage.setItem('sales', JSON.stringify(sales))
+  safeSet('sales', sales)
 }
 
 export function addSale(sale) {
@@ -107,7 +120,19 @@ export async function exportBackup({ newFile = false } = {}) {
   }
 }
 
+const isValidProduct = (p) =>
+  p && typeof p.id === 'string' && p.id.length <= 64 &&
+  typeof p.name === 'string' && p.name.length <= 100 &&
+  typeof p.sellPrice === 'number' && Number.isFinite(p.sellPrice) && p.sellPrice >= 0
+
+const isValidSale = (s) =>
+  s && typeof s.id === 'string' && s.id.length <= 64 &&
+  typeof s.productId === 'string' && s.productId.length <= 64 &&
+  typeof s.qty === 'number' && Number.isFinite(s.qty) && s.qty > 0 &&
+  typeof s.unitPrice === 'number' && Number.isFinite(s.unitPrice) && s.unitPrice >= 0
+
 export function importBackup(file) {
+  if (file.size > 50 * 1024 * 1024) return Promise.reject(new Error('파일이 50MB를 초과합니다.'))
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -115,6 +140,8 @@ export function importBackup(file) {
         const data = JSON.parse(e.target.result)
         if (!Array.isArray(data.products) || !Array.isArray(data.sales)) throw new Error('올바른 백업 파일이 아니에요.')
         if (data.products.length > 50000 || data.sales.length > 500000) throw new Error('백업 파일이 너무 커요.')
+        if (!data.products.every(isValidProduct)) throw new Error('상품 데이터가 올바르지 않아요.')
+        if (!data.sales.every(isValidSale)) throw new Error('판매 데이터가 올바르지 않아요.')
         // 카테고리·뽑기 데이터도 복원 (구버전 백업은 빈 배열로 처리)
         if (Array.isArray(data.categories)) saveCategories(data.categories)
         saveProducts(data.products)
@@ -160,7 +187,7 @@ export function getGachaGrades() {
   return JSON.parse(localStorage.getItem('gachaGrades') || '[]')
 }
 export function saveGachaGrades(grades) {
-  localStorage.setItem('gachaGrades', JSON.stringify(grades))
+  safeSet('gachaGrades', grades)
 }
 export function addGachaGrade({ name, allowance, price }) {
   const grades = getGachaGrades()
@@ -185,7 +212,7 @@ export function getGachaSales() {
   return JSON.parse(localStorage.getItem('gachaSales') || '[]')
 }
 export function saveGachaSales(sales) {
-  localStorage.setItem('gachaSales', JSON.stringify(sales))
+  safeSet('gachaSales', sales)
 }
 export function addGachaSale({ gradeName, gradePrice, products }) {
   const sales = getGachaSales()

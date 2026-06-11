@@ -221,7 +221,12 @@ export default function SaleInput({ onDone }) {
     const newQty = c.qty + delta
     return newQty <= 0 ? null : { ...c, qty: newQty }
   }).filter(Boolean))
-  const updatePrice = (productId, price) => setCart(prev => prev.map(c => c.product.id === productId ? { ...c, unitPrice: Number(price) || 0 } : c))
+  const safePrice = (price) => {
+    const n = Number(price)
+    if (!Number.isFinite(n) || n < 0 || n > 99999999) return 0
+    return Math.floor(n)
+  }
+  const updatePrice = (productId, price) => setCart(prev => prev.map(c => c.product.id === productId ? { ...c, unitPrice: safePrice(price) } : c))
 
   const handleQRScanned = (productId) => {
     const product = products.find(p => p.id === productId)
@@ -243,8 +248,9 @@ export default function SaleInput({ onDone }) {
 
   const handleSell = () => {
     if (cart.length === 0) return alert('판매할 상품을 담아주세요.')
+    const safeName = (s) => String(s).replace(/[\n\r\t]/g, ' ').slice(0, 60)
     for (const c of cart) {
-      if (c.product.stock < c.qty) return alert(`"${c.product.name}" 재고가 부족해요.\n현재 재고: ${c.product.stock}개, 판매 수량: ${c.qty}개`)
+      if (c.product.stock < c.qty) return alert(`"${safeName(c.product.name)}" 재고가 부족해요.\n현재 재고: ${c.product.stock}개, 판매 수량: ${c.qty}개`)
       if (c.unitPrice <= 0) return alert(`"${c.product.name}"의 판매가를 확인해주세요.`)
     }
     const saleTime = new Date().toISOString()

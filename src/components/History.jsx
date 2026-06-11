@@ -169,26 +169,36 @@ export default function History() {
       return `${a[0]} ${a[1]}`.localeCompare(`${b[0]} ${b[1]}`)
     })
 
+    // CSV 인젝션 방지: =, +, @, - 로 시작하는 값에 작은따옴표 접두사 추가
+    const safeCSV = (v) => {
+      const s = String(v)
+      return /^[=+@-]/.test(s) ? `'${s}` : s
+    }
     const bom = '﻿' // 엑셀 한글 깨짐 방지 BOM
-    const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const csv = bom + rows.map(r => r.map(v => `"${safeCSV(v).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `판매내역_${startDate}_${endDate}.csv`
+    // 파일명에 날짜 외 특수문자 제거
+    const safeDate = (d) => d.replace(/[^0-9-]/g, '')
+    a.download = `판매내역_${safeDate(startDate)}_${safeDate(endDate)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
 
+  // 다이얼로그 텍스트 개행 인젝션 방지
+  const safeName = (s) => String(s).replace(/[\n\r\t]/g, ' ').slice(0, 60)
+
   const handleDelete = (sale) => {
-    if (!confirm(`"${sale.productName}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
+    if (!confirm(`"${safeName(sale.productName)}" 판매 기록을 취소할까요?\n재고 ${sale.qty}개가 복구돼요.`)) return
     deleteSale(sale.id)
     refresh()
   }
 
   const handleDeleteGacha = (gs) => {
-    const names = gs.products.map(p => `${p.productName} ${p.qty}개`).join(', ')
-    if (!confirm(`뽑기 판매(${gs.gradeName}) 기록을 취소할까요?\n재고 복구: ${names}`)) return
+    const names = gs.products.map(p => `${safeName(p.productName)} ${p.qty}개`).join(', ')
+    if (!confirm(`뽑기 판매(${safeName(gs.gradeName)}) 기록을 취소할까요?\n재고 복구: ${names}`)) return
     deleteGachaSale(gs.id)
     refresh()
   }
