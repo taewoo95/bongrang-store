@@ -39,6 +39,15 @@ export default function Dashboard({ onNavigate }) {
     }
   }
 
+  const handleExport = async (opts) => {
+    try {
+      await exportBackup(opts)
+    } catch (err) {
+      setRestoreMsg(`❌ ${err.message || t('dash_export_fail')}`)
+      setTimeout(() => setRestoreMsg(null), 3000)
+    }
+  }
+
   const handleImport = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -213,7 +222,7 @@ export default function Dashboard({ onNavigate }) {
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
           <button
-            onClick={() => exportBackup({ newFile: false }).catch(() => {})}
+            onClick={() => handleExport({ newFile: false })}
             style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', borderRadius: '12px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: '#4338ca', cursor: 'pointer' }}
           >
             <Download size={20} color="#6366f1" />
@@ -221,7 +230,7 @@ export default function Dashboard({ onNavigate }) {
           </button>
 
           <button
-            onClick={() => exportBackup({ newFile: true }).catch(() => {})}
+            onClick={() => handleExport({ newFile: true })}
             style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: '#475569', cursor: 'pointer' }}
           >
             <FilePlus size={20} color="#94a3b8" />

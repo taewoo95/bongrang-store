@@ -42,6 +42,7 @@ const translations = {
     dash_install_ios: '홈 화면에 앱 추가 (iOS)',
     dash_install_ios_guide: 'Safari 하단 공유 버튼 → "홈 화면에 추가" 를 탭하면 앱처럼 설치돼요.',
     dash_restore_ok: (p, s, d) => `✅ 복원 완료! 상품 ${p}개, 판매내역 ${s}건 (백업일: ${d})`,
+    dash_export_fail: '백업에 실패했어요. 다시 시도해주세요.',
 
     // 상품관리
     prod_title: '상품 관리',
@@ -212,6 +213,7 @@ const translations = {
     dash_install_ios: 'Add to Home Screen (iOS)',
     dash_install_ios_guide: 'Tap the Share button at the bottom of Safari → "Add to Home Screen".',
     dash_restore_ok: (p, s, d) => `✅ Restored! ${p} items, ${s} sales (backup date: ${d})`,
+    dash_export_fail: 'Backup failed. Please try again.',
 
     // 상품관리
     prod_title: 'Item Management',

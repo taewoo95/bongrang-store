@@ -109,15 +109,22 @@ export async function exportBackup({ newFile = false } = {}) {
   const file = new File([blob], filename, { type: 'application/json' })
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ files: [file], title: filename })
-  } else {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      await navigator.share({ files: [file], title: filename })
+      return
+    } catch (err) {
+      if (err.name === 'AbortError') return // 사용자가 공유창을 취소함
+      // 공유 실패 시 다운로드 방식으로 대체
+    }
   }
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 const isValidProduct = (p) =>
