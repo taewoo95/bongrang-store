@@ -36,6 +36,28 @@ export default function Products() {
 
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
+  // 모달이 열려있는 동안 배경 스크롤을 잠그고, 닫히면 원래 위치로 복원
+  // (포커스된 input이 fixed 모달 안에 있으면 모바일 브라우저가 배경을 맨 위로 스크롤시키는 버그 방지)
+  const savedScrollY = useRef(0)
+  useEffect(() => {
+    if (showForm) {
+      savedScrollY.current = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${savedScrollY.current}px`
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      window.scrollTo(0, savedScrollY.current)
+    }
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+    }
+  }, [showForm])
+
   const handleSubmit = () => {
     if (!form.name || !form.sellPrice) return alert(t('prod_form_required'))
     const categoryId = form.categoryId || null
