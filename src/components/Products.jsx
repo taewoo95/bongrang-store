@@ -37,25 +37,20 @@ export default function Products() {
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
   // 모달이 열려있는 동안 배경 스크롤을 잠그고, 닫히면 원래 위치로 복원
-  // (포커스된 input이 fixed 모달 안에 있으면 모바일 브라우저가 배경을 맨 위로 스크롤시키는 버그 방지)
-  const savedScrollY = useRef(0)
+  // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div — 포커스된 input이
+  //  fixed 모달 안에 있으면 모바일 브라우저가 이 컨테이너를 맨 위로 스크롤시키는 버그 방지)
+  const savedScrollTop = useRef(0)
   useEffect(() => {
+    const container = document.querySelector('.app-scroll')
+    if (!container) return
     if (showForm) {
-      savedScrollY.current = window.scrollY
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${savedScrollY.current}px`
-      document.body.style.width = '100%'
+      savedScrollTop.current = container.scrollTop
+      container.style.overflow = 'hidden'
     } else {
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
-      window.scrollTo(0, savedScrollY.current)
+      container.style.overflow = ''
+      container.scrollTop = savedScrollTop.current
     }
-    return () => {
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
-    }
+    return () => { container.style.overflow = '' }
   }, [showForm])
 
   const handleSubmit = () => {

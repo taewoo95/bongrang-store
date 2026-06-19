@@ -21,7 +21,7 @@ function AppInner() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+      <div className="app-scroll" style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
         {tab === 'dashboard' && <Dashboard onNavigate={setTab} />}
         {tab === 'products'  && <Products />}
         {tab === 'sale'      && <SaleInput onDone={() => setTab('history')} />}
