@@ -36,11 +36,14 @@ export default function Products() {
 
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
-  // 모달이 열려있는 동안 배경 스크롤 위좌는 고정하고, 닫히면 원래 위치로 복원
+  // 모달이 열려있는 동안 배경 스크롤 위치를 고정하고, 닫히면 원래 위치로 복원
   // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div — 모달을 열 때
-  //  모바일 브라우저가 렌도링과 동시에 이 컨테이너를 맨 위로 스크롤시쾤뺄리는 경우가 있어,
-  //  useEffect(렌도링 이후)에서 위좌를 저장하마이 이보입 퉜 뛰(0)를 저장하게 될.
-  //  그래서 버튼 클릭 시점(openForm)에 미리, 즉 스크롤이 틀지 전에 위좌를 저장해둔다)
+  //  모바일 브라우저가 렌더링과 동시에 이 컨테이너를 맨 위로 스크롤시켜버리는 경우가 있어,
+  //  useEffect(렌더링 이후)에서 위치를 저장하면 이미 스크롤이 튄 뒤(0)를 저장하게 됨.
+  //  그래서 버튼 클릭 시점(openForm)에 미리, 즉 스크롤이 튀기 전에 위치를 저장해둔다.
+  //  또한 overflow:hidden만으로는 모달 내부 스크롤이 끝에 닿았을 때 그 스크롤이
+  //  부모 컨테이너로 그대로 이어지는 "스크롤 체이닝" 현상을 막지 못해, 모달 내부에
+  //  overscrollBehavior: 'contain'을 함께 적용한다)
   const savedScrollTop = useRef(0)
   const openForm = () => {
     const container = document.querySelector('.app-scroll')
@@ -52,12 +55,12 @@ export default function Products() {
     if (!container) return
 
     if (showForm) {
-      const lockScroll = () => { container.scrollTop = savedScrollTop.current }
-      lockScroll()
-      container.addEventListener('scroll', lockScroll)
+      container.scrollTop = savedScrollTop.current
+      const prevOverflow = container.style.overflow
+      container.style.overflow = 'hidden'
       return () => {
-        container.removeEventListener('scroll', lockScroll)
-        // 모달이 닫힌 직후 키보돜가 접힌에 따마다 한 변 더 스크롤이 틀는 경우가 있어 여뛰 차례 복원
+        container.style.overflow = prevOverflow
+        // 모달이 닫힌 직후 키보드가 접히며 한 번 더 스크롤이 튀는 경우가 있어 여러 차례 복원
         const restore = () => { container.scrollTop = savedScrollTop.current }
         restore()
         requestAnimationFrame(restore)
@@ -410,9 +413,9 @@ export default function Products() {
 
       {/* 상품 추가/수정 — 하단 슬라이드업 모달 */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', touchAction: 'none' }}
           onClick={e => { if (e.target === e.currentTarget) { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) } }}>
-          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto' }}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '17px', fontWeight: '700' }}>{editId ? t('prod_edit_title') : t('prod_add_title')}</h3>
               <button onClick={() => { setShowForm(false); setEditId(null); setForm(EMPTY_FORM) }} style={{ background: 'none', color: '#94a3b8' }}><X size={22} /></button>
