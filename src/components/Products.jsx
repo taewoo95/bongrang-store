@@ -45,9 +45,14 @@ export default function Products() {
   //  부모 컨테이너로 그대로 이어지는 "스크롤 체이닝" 현상을 막지 못해, 모달 내부에
   //  overscrollBehavior: 'contain'을 함께 적용한다)
   const savedScrollTop = useRef(0)
-  const openForm = () => {
+  // 버튼 클릭(onClick) 시점에는 이미 번년저가 포커스 이동 때문에 스크롤을 옥겨놓은
+  // 듷일 수 있어, 그보다 먼저 발생하는 포인터/타시 시작 시점에 미리 캐처해둔다
+  const captureScroll = () => {
     const container = document.querySelector('.app-scroll')
     if (container) savedScrollTop.current = container.scrollTop
+  }
+  const openForm = () => {
+    captureScroll()
     setShowForm(true)
   }
   useEffect(() => {
@@ -298,7 +303,7 @@ export default function Products() {
         </div>
         <div style={{ display: 'flex', gap: '6px', marginLeft: '10px' }}>
           <button onClick={() => setQrProduct(p)} style={{ background: '#f1f5f9', color: '#6366f1', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><QrCode size={14} /></button>
-          <button onClick={() => handleEdit(p)} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><Edit2 size={14} /></button>
+          <button onPointerDown={captureScroll} onClick={() => handleEdit(p)} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><Edit2 size={14} /></button>
           <button onClick={() => handleDelete(p.id)} style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><Trash2 size={14} /></button>
         </div>
       </div>
@@ -314,6 +319,7 @@ export default function Products() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('prod_title')}</h1>
         <button
+          onPointerDown={captureScroll}
           onClick={() => { setForm(EMPTY_FORM); setEditId(null); openForm() }}
           style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}
         >
