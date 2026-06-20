@@ -37,16 +37,14 @@ export default function Products() {
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
   // 모달이 열려있는 동안 배경 스크롤 위치를 고정하고, 닫히면 원래 위치로 복원
-  // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div — 모달을 열 때
-  //  모바일 브라우저가 렌더링과 동시에 이 컨테이너를 맨 위로 스크롤시켜버리는 경우가 있어,
-  //  useEffect(렌더링 이후)에서 위치를 저장하면 이미 스크롤이 튄 뒤(0)를 저장하게 됨.
-  //  그래서 버튼 클릭 시점(openForm)에 미리, 즉 스크롤이 튀기 전에 위치를 저장해둔다.
-  //  또한 overflow:hidden만으로는 모달 내부 스크롤이 끝에 닿았을 때 그 스크롤이
-  //  부모 컨테이너로 그대로 이어지는 "스크롤 체이닝" 현상을 막지 못해, 모달 내부에
-  //  overscrollBehavior: 'contain'을 함께 적용한다)
+  // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div.
+  //  버튼 클릭(onClick) 시점에는 이미 브라우저가 포커스 이동 때문에 스크롤을 옮겨놓은
+  //  뒤일 수 있어, 그보다 먼저 발생하는 포인터 시작 시점에 미리 캡처해둔다.
+  //  주의: container.style.overflow(shorthand)를 건드리면 App.jsx가 React로 지정한
+  //  overflowY(longhand) 값이 영구적으로 사라져버려(getter가 ''를 반환 → 복원 시 overflow-y까지
+  //  같이 지워짐) 모달을 한번이라도 열고 닫으면 리스트가 영원히 스크롤 불가능해지는 버그가 있었다.
+  //  그래서 overflow는 절대 만지지 않고, scrollTop 값만 캡처/복원한다)
   const savedScrollTop = useRef(0)
-  // 버튼 클릭(onClick) 시점에는 이미 번년저가 포커스 이동 때문에 스크롤을 옥겨놓은
-  // 듷일 수 있어, 그보다 먼저 발생하는 포인터/타시 시작 시점에 미리 캐처해둔다
   const captureScroll = () => {
     const container = document.querySelector('.app-scroll')
     if (container) savedScrollTop.current = container.scrollTop
@@ -61,10 +59,7 @@ export default function Products() {
 
     if (showForm) {
       container.scrollTop = savedScrollTop.current
-      const prevOverflow = container.style.overflow
-      container.style.overflow = 'hidden'
       return () => {
-        container.style.overflow = prevOverflow
         // 모달이 닫힌 직후 키보드가 접히며 한 번 더 스크롤이 튀는 경우가 있어 여러 차례 복원
         const restore = () => { container.scrollTop = savedScrollTop.current }
         restore()
