@@ -37,18 +37,23 @@ export default function Products() {
   const refresh = () => { setProducts(sortedProducts()); setCategories(getCategories()) }
 
   // 모달이 열려있는 동안 배경 스크롤 위좌는 고정하고, 닫히면 원래 위치로 복원
-  // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div — 포커스된 input이
-  //  fixed 모달 안에 있으면 모바일 브라우저가 이 컨테이너를 강제로 스크롤시키는 버그 방지.
-  //  overflow:hidden만으로는 일부 안드로이드 벌렄이저에서 막히지 않아, 스크롤 이벤트가
-  //  발생할 때마다 즉시 원위솨로 되돌리는 방식으로 처리)
+  // (실제 스크롤 컨테이너는 body가 아니라 App.jsx의 .app-scroll div — 모달을 열 때
+  //  모바일 브라우저가 렌도링과 동시에 이 컨테이너를 맨 위로 스크롤시쾤뺄리는 경우가 있어,
+  //  useEffect(렌도링 이후)에서 위좌를 저장하마이 이보입 퉜 뛰(0)를 저장하게 될.
+  //  그래서 버튼 클릭 시점(openForm)에 미리, 즉 스크롤이 틀지 전에 위좌를 저장해둔다)
   const savedScrollTop = useRef(0)
+  const openForm = () => {
+    const container = document.querySelector('.app-scroll')
+    if (container) savedScrollTop.current = container.scrollTop
+    setShowForm(true)
+  }
   useEffect(() => {
     const container = document.querySelector('.app-scroll')
     if (!container) return
 
     if (showForm) {
-      savedScrollTop.current = container.scrollTop
       const lockScroll = () => { container.scrollTop = savedScrollTop.current }
+      lockScroll()
       container.addEventListener('scroll', lockScroll)
       return () => {
         container.removeEventListener('scroll', lockScroll)
@@ -89,7 +94,7 @@ export default function Products() {
 
   const handleEdit = (p) => {
     setForm({ name: p.name, categoryId: p.categoryId || '', costPrice: String(p.costPrice), sellPrice: String(p.sellPrice), stock: String(p.stock), lowStockAlert: String(p.lowStockAlert) })
-    setEditId(p.id); setShowForm(true)
+    setEditId(p.id); openForm()
   }
 
   const handleDelete = (id) => {
@@ -306,7 +311,7 @@ export default function Products() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700' }}>{t('prod_title')}</h1>
         <button
-          onClick={() => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true) }}
+          onClick={() => { setForm(EMPTY_FORM); setEditId(null); openForm() }}
           style={{ background: '#6366f1', color: '#fff', borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}
         >
           <Plus size={16} /> {t('prod_add')}
