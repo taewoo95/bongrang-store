@@ -177,6 +177,7 @@ export default function SaleInput({ onDone }) {
   const [activeCat, setActiveCat] = useState('all')
   const [showScanner, setShowScanner] = useState(false)
   const [cartExpanded, setCartExpanded] = useState(false)
+  const [cartDiscountPercent, setCartDiscountPercent] = useState(0)
 
   // 뽑기 판매 상태
   const [grades, setGrades] = useState(getGachaGrades)
@@ -231,6 +232,12 @@ export default function SaleInput({ onDone }) {
     const clamped = !Number.isFinite(n) ? 0 : Math.min(Math.max(n, 0), 100)
     return { ...c, discountPercent: clamped }
   }))
+  // 전체 금액 할인 — 개별 상품 할인 적용 후 합계에 한 번 더 적용
+  const finalUnitPriceOf = (c) => Math.round(unitPriceOf(c) * (1 - (Number(cartDiscountPercent) || 0) / 100))
+  const updateCartDiscountPercent = (percent) => {
+    const n = Number(percent)
+    setCartDiscountPercent(!Number.isFinite(n) ? 0 : Math.min(Math.max(n, 0), 100))
+  }
 
   const handleQRScanned = (productId) => {
     const product = products.find(p => p.id === productId)
@@ -247,7 +254,8 @@ export default function SaleInput({ onDone }) {
     return product.name
   }
 
-  const totalAmount = cart.reduce((sum, c) => sum + unitPriceOf(c) * c.qty, 0)
+  const subtotalAmount = cart.reduce((sum, c) => sum + unitPriceOf(c) * c.qty, 0)
+  const totalAmount = cart.reduce((sum, c) => sum + finalUnitPriceOf(c) * c.qty, 0)
   const totalItems = cart.reduce((sum, c) => sum + c.qty, 0)
 
   const handleSell = () => {
@@ -255,15 +263,15 @@ export default function SaleInput({ onDone }) {
     const safeName = (s) => String(s).replace(/[\n\r\t]/g, ' ').slice(0, 60)
     for (const c of cart) {
       if (c.product.stock < c.qty) return alert(t('sale_low_stock_err', safeName(c.product.name), c.product.stock, c.qty))
-      if (unitPriceOf(c) <= 0) return alert(`"${c.product.name}"의 판매가를 확인해주세요.`)
+      if (finalUnitPriceOf(c) <= 0) return alert(`"${c.product.name}"의 판매가를 확인해주세요.`)
     }
     const saleTime = new Date().toISOString()
     cart.forEach(c => {
-      const unitPrice = unitPriceOf(c)
+      const unitPrice = finalUnitPriceOf(c)
       addSale({ productId: c.product.id, productName: c.product.name, qty: c.qty, unitPrice, totalPrice: unitPrice * c.qty, costPrice: c.product.costPrice, time: saleTime })
       deductStock(c.product.id, c.qty)
     })
-    setDoneData({ cart: cart.map(c => ({ ...c, unitPrice: unitPriceOf(c) })), totalAmount })
+    setDoneData({ cart: cart.map(c => ({ ...c, unitPrice: finalUnitPriceOf(c) })), totalAmount })
     setDone(true)
   }
 
@@ -324,7 +332,7 @@ export default function SaleInput({ onDone }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button onClick={() => { setCart([]); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
+          <button onClick={() => { setCart([]); setCartDiscountPercent(0); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
           <button onClick={onDone} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>내역 보기</button>
         </div>
       </div>
@@ -405,7 +413,22 @@ export default function SaleInput({ onDone }) {
               {/* 헤더 */}
               <div style={{ padding: '12px 16px', background: '#eef2ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca' }}>🛒 {cart.length}종 · {totalItems}개</span>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{fmt(totalAmount)}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  {cartDiscountPercent > 0 && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(subtotalAmount)}</span>}
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{fmt(totalAmount)}</span>
+                </div>
+              </div>
+              {/* 전체 금액 할인 */}
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', flexShrink: 0 }}>전체 할인</span>
+                <input
+                  type="number"
+                  value={cartDiscountPercent || ''}
+                  placeholder="0"
+                  onChange={e => updateCartDiscountPercent(e.target.value)}
+                  style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                />
+                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
               </div>
               {/* 상품 행 */}
               {cart.map((c, i) => (
@@ -417,8 +440,8 @@ export default function SaleInput({ onDone }) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1 }}>{c.product.name}</span>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                      {c.discountPercent > 0 && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(c.product.sellPrice * c.qty)}</span>}
-                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', whiteSpace: 'nowrap' }}>{fmt(unitPriceOf(c) * c.qty)}</span>
+                      {(c.discountPercent > 0 || cartDiscountPercent > 0) && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(c.product.sellPrice * c.qty)}</span>}
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#6366f1', whiteSpace: 'nowrap' }}>{fmt(finalUnitPriceOf(c) * c.qty)}</span>
                     </div>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                   </div>
@@ -560,7 +583,7 @@ export default function SaleInput({ onDone }) {
                       <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
                       <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex' }}><Plus size={13} /></button>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6366f1', minWidth: '64px', textAlign: 'right' }}>{fmt(unitPriceOf(c) * c.qty)}</span>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6366f1', minWidth: '64px', textAlign: 'right' }}>{fmt(finalUnitPriceOf(c) * c.qty)}</span>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', padding: '2px' }}><Trash2 size={14} /></button>
                   </div>
                 </div>
