@@ -50,7 +50,6 @@ export default function Products() {
     if (container) savedScrollTop.current = container.scrollTop
   }
   const openForm = () => {
-    captureScroll()
     setShowForm(true)
   }
   useEffect(() => {
