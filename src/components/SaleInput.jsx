@@ -178,6 +178,8 @@ export default function SaleInput({ onDone }) {
   const [showScanner, setShowScanner] = useState(false)
   const [cartExpanded, setCartExpanded] = useState(false)
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkDiscountInput, setBulkDiscountInput] = useState('')
 
   // 뽑기 판매 상태
   const [grades, setGrades] = useState(getGachaGrades)
@@ -237,6 +239,17 @@ export default function SaleInput({ onDone }) {
   const updateCartDiscountPercent = (percent) => {
     const n = Number(percent)
     setCartDiscountPercent(!Number.isFinite(n) ? 0 : Math.min(Math.max(n, 0), 100))
+  }
+  // 선택한 상품들에 같은 할인율을 한 번에 적용
+  const toggleSelect = (productId) => setSelectedIds(prev => {
+    const next = new Set(prev)
+    next.has(productId) ? next.delete(productId) : next.add(productId)
+    return next
+  })
+  const applyBulkDiscount = () => {
+    const n = Number(bulkDiscountInput)
+    const clamped = !Number.isFinite(n) ? 0 : Math.min(Math.max(n, 0), 100)
+    setCart(prev => prev.map(c => selectedIds.has(c.product.id) ? { ...c, discountPercent: clamped } : c))
   }
 
   const handleQRScanned = (productId) => {
@@ -332,7 +345,7 @@ export default function SaleInput({ onDone }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button onClick={() => { setCart([]); setCartDiscountPercent(0); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
+          <button onClick={() => { setCart([]); setCartDiscountPercent(0); setSelectedIds(new Set()); setBulkDiscountInput(''); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
           <button onClick={onDone} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>내역 보기</button>
         </div>
       </div>
@@ -430,6 +443,25 @@ export default function SaleInput({ onDone }) {
                 />
                 <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
               </div>
+              {/* 선택 상품 일괄 할인 */}
+              {cart.length > 1 && (
+                <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: '700', flexShrink: 0, whiteSpace: 'nowrap' }}>선택 {selectedIds.size}개 할인</span>
+                  <input
+                    type="number"
+                    value={bulkDiscountInput}
+                    placeholder="0"
+                    onChange={e => setBulkDiscountInput(e.target.value)}
+                    style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                  />
+                  <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                  <button
+                    onClick={applyBulkDiscount}
+                    disabled={selectedIds.size === 0}
+                    style={{ background: selectedIds.size === 0 ? '#e2e8f0' : '#6366f1', color: '#fff', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}
+                  >적용</button>
+                </div>
+              )}
               {/* 상품 행 */}
               {cart.map((c, i) => (
                 <div key={c.product.id} style={{
@@ -438,6 +470,14 @@ export default function SaleInput({ onDone }) {
                 }}>
                   {/* 1행: 상품명 + 소계 + 삭제 */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    {cart.length > 1 && (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(c.product.id)}
+                        onChange={() => toggleSelect(c.product.id)}
+                        style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px', accentColor: '#6366f1' }}
+                      />
+                    )}
                     <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', flex: 1 }}>{c.product.name}</span>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
                       {(c.discountPercent > 0 || cartDiscountPercent > 0) && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(c.product.sellPrice * c.qty)}</span>}
