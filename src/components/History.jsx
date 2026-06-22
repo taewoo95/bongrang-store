@@ -30,20 +30,30 @@ function toLocalDateTimeInput(iso) {
 
 function EditModal({ sale, onClose, onSaved }) {
   const products = getProducts()
+  const [editMode, setEditMode] = useState('unit') // 'unit' | 'total'
   const [qty, setQty] = useState(sale.qty)
   const [unitPrice, setUnitPrice] = useState(sale.unitPrice)
+  const [totalPriceInput, setTotalPriceInput] = useState(sale.totalPrice)
   const [time, setTime] = useState(() => toLocalDateTimeInput(sale.time))
+
+  const computedTotal = editMode === 'unit' ? Number(qty) * Number(unitPrice) : Number(totalPriceInput)
 
   const handleSave = () => {
     if (qty <= 0) return alert('수량은 1개 이상이어야 해요.')
-    if (unitPrice <= 0) return alert('판매가를 확인해주세요.')
+    if (editMode === 'unit') {
+      if (unitPrice <= 0) return alert('판매가를 확인해주세요.')
+    } else {
+      if (totalPriceInput <= 0) return alert('전솨 금액을 확인해주세요.')
+    }
+    const finalTotal = editMode === 'unit' ? Number(qty) * Number(unitPrice) : Number(totalPriceInput)
+    const finalUnitPrice = editMode === 'unit' ? Number(unitPrice) : finalTotal / Number(qty)
     updateSale(sale.id, {
       productId: sale.productId,
       productName: sale.productName,
       costPrice: sale.costPrice,
       qty: Number(qty),
-      unitPrice: Number(unitPrice),
-      totalPrice: Number(qty) * Number(unitPrice),
+      unitPrice: finalUnitPrice,
+      totalPrice: finalTotal,
       time: new Date(time).toISOString(),
     })
     onSaved()
@@ -76,16 +86,52 @@ function EditModal({ sale, onClose, onSaved }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={labelStyle}>수량 (개)</label>
-              <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={inputStyle} min="1" />
-            </div>
-            <div>
-              <label style={labelStyle}>단가 (원)</label>
-              <input type="number" value={unitPrice} onChange={e => setUnitPrice(e.target.value)} style={inputStyle} />
+          <div>
+            <label style={labelStyle}>수정 방식</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { key: 'unit', label: '단가 수정' },
+                { key: 'total', label: '전솨금액 수정' },
+              ].map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => setEditMode(opt.key)}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: '10px', fontSize: '14px', fontWeight: '600',
+                    background: editMode === opt.key ? '#6366f1' : '#f1f5f9',
+                    color: editMode === opt.key ? '#fff' : '#64748b',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
+
+          {editMode === 'unit' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={labelStyle}>수량 (개)</label>
+                <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={inputStyle} min="1" />
+              </div>
+              <div>
+                <label style={labelStyle}>단가 (원)</label>
+                <input type="number" value={unitPrice} onChange={e => setUnitPrice(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={labelStyle}>수량 (개)</label>
+                <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={inputStyle} min="1" />
+              </div>
+              <div>
+                <label style={labelStyle}>전솨 금액 (원)</label>
+                <input type="number" value={totalPriceInput} onChange={e => setTotalPriceInput(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          )}
+
           <div>
             <label style={labelStyle}>판매 시간</label>
             <input type="datetime-local" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
@@ -94,7 +140,7 @@ function EditModal({ sale, onClose, onSaved }) {
           <div style={{ background: '#eef2ff', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#64748b', fontSize: '14px' }}>수정 후 합계</span>
             <span style={{ fontWeight: '700', color: '#6366f1', fontSize: '16px' }}>
-              {(Number(qty) * Number(unitPrice)).toLocaleString()}원
+              {(computedTotal || 0).toLocaleString()}원
             </span>
           </div>
 
