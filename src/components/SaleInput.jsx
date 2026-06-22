@@ -180,6 +180,7 @@ export default function SaleInput({ onDone }) {
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkDiscountInput, setBulkDiscountInput] = useState('')
+  const [showDiscountPanel, setShowDiscountPanel] = useState(false)
 
   // 뽑기 판매 상태
   const [grades, setGrades] = useState(getGachaGrades)
@@ -426,41 +427,58 @@ export default function SaleInput({ onDone }) {
               {/* 헤더 */}
               <div style={{ padding: '12px 16px', background: '#eef2ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca' }}>🛒 {cart.length}종 · {totalItems}개</span>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  {cartDiscountPercent > 0 && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(subtotalAmount)}</span>}
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{fmt(totalAmount)}</span>
-                </div>
-              </div>
-              {/* 전체 금액 할인 */}
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', flexShrink: 0 }}>전체 할인</span>
-                <input
-                  type="number"
-                  value={cartDiscountPercent || ''}
-                  placeholder="0"
-                  onChange={e => updateCartDiscountPercent(e.target.value)}
-                  style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
-                />
-                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
-              </div>
-              {/* 선택 상품 일괄 할인 */}
-              {cart.length > 1 && (
-                <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: '700', flexShrink: 0, whiteSpace: 'nowrap' }}>선택 {selectedIds.size}개 할인</span>
-                  <input
-                    type="number"
-                    value={bulkDiscountInput}
-                    placeholder="0"
-                    onChange={e => setBulkDiscountInput(e.target.value)}
-                    style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
-                    onClick={applyBulkDiscount}
-                    disabled={selectedIds.size === 0}
-                    style={{ background: selectedIds.size === 0 ? '#e2e8f0' : '#6366f1', color: '#fff', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}
-                  >적용</button>
+                    onClick={() => setShowDiscountPanel(v => !v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0,
+                      background: showDiscountPanel || cartDiscountPercent > 0 ? '#fee2e2' : 'transparent',
+                      color: '#ef4444', borderRadius: '20px', padding: '4px 9px', fontSize: '12px', fontWeight: '700',
+                    }}
+                  >
+                    할인{cartDiscountPercent > 0 && ` ${cartDiscountPercent}%`}
+                    {showDiscountPanel ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    {cartDiscountPercent > 0 && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>{fmt(subtotalAmount)}</span>}
+                    <span style={{ fontSize: '15px', fontWeight: '800', color: '#6366f1' }}>{fmt(totalAmount)}</span>
+                  </div>
                 </div>
+              </div>
+              {showDiscountPanel && (
+                <>
+                  {/* 전체 금액 할인 */}
+                  <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', flexShrink: 0 }}>전체 할인</span>
+                    <input
+                      type="number"
+                      value={cartDiscountPercent || ''}
+                      placeholder="0"
+                      onChange={e => updateCartDiscountPercent(e.target.value)}
+                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                  </div>
+                  {/* 선택 상품 일괄 할인 */}
+                  {cart.length > 1 && (
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', flexShrink: 0, whiteSpace: 'nowrap' }}>선택 {selectedIds.size}개 할인</span>
+                      <input
+                        type="number"
+                        value={bulkDiscountInput}
+                        placeholder="0"
+                        onChange={e => setBulkDiscountInput(e.target.value)}
+                        style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                      <button
+                        onClick={applyBulkDiscount}
+                        disabled={selectedIds.size === 0}
+                        style={{ background: selectedIds.size === 0 ? '#e2e8f0' : '#ef4444', color: '#fff', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}
+                      >적용</button>
+                    </div>
+                  )}
+                </>
               )}
               {/* 상품 행 */}
               {cart.map((c, i) => (
@@ -470,7 +488,7 @@ export default function SaleInput({ onDone }) {
                 }}>
                   {/* 1행: 상품명 + 소계 + 삭제 */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                    {cart.length > 1 && (
+                    {showDiscountPanel && cart.length > 1 && (
                       <input
                         type="checkbox"
                         checked={selectedIds.has(c.product.id)}
@@ -485,22 +503,26 @@ export default function SaleInput({ onDone }) {
                     </div>
                     <button onClick={() => removeFromCart(c.product.id)} style={{ background: 'none', color: '#cbd5e1', display: 'flex', flexShrink: 0, padding: '2px' }}><X size={15} /></button>
                   </div>
-                  {/* 2행: 수량 + 할인 입력 */}
+                  {/* 2행: 수량 + (할인 패널이 열려있거나 이미 할인 중일 때만) 할인 입력 */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', borderRadius: '8px', padding: '4px 8px', flexShrink: 0 }}>
                       <button onClick={() => updateQty(c.product.id, -1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Minus size={13} /></button>
                       <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{c.qty}</span>
                       <button onClick={() => updateQty(c.product.id, 1)} style={{ background: 'none', color: '#94a3b8', display: 'flex', padding: '2px' }}><Plus size={13} /></button>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600', flexShrink: 0 }}>할인</span>
-                    <input
-                      type="number"
-                      value={c.discountPercent || ''}
-                      placeholder="0"
-                      onChange={e => updateDiscountPercent(c.product.id, e.target.value)}
-                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
-                    />
-                    <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                    {(showDiscountPanel || c.discountPercent > 0) && (
+                      <>
+                        <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600', flexShrink: 0 }}>할인</span>
+                        <input
+                          type="number"
+                          value={c.discountPercent || ''}
+                          placeholder="0"
+                          onChange={e => updateDiscountPercent(c.product.id, e.target.value)}
+                          style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#f8fafc', outline: 'none', textAlign: 'right' }}
+                        />
+                        <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>%</span>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
