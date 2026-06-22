@@ -118,6 +118,7 @@ const translations = {
     hist_gacha: '뽑기',
     hist_qty: (n) => `${n}개`,
     hist_cost: (n) => `원가 `,
+    hist_and_more: (n) => n > 0 ? `외 ${n}건` : '',
 
     // 분석
     anal_title: '분석',
@@ -289,6 +290,7 @@ const translations = {
     hist_gacha: 'Gacha',
     hist_qty: (n) => `${n} pcs`,
     hist_cost: (n) => `Cost `,
+    hist_and_more: (n) => n > 0 ? `+${n} more` : '',
 
     // 분석
     anal_title: 'Analysis',

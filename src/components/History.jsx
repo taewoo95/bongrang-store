@@ -214,9 +214,27 @@ export default function History() {
     return d >= startDate && d <= endDate
   })
 
-  // merge and tag: normal sales get type:'normal', gacha get type:'gacha'
+  // 일반 판매: 같은 결제 건(동일 시각)끼리 하나의 거래로 그룹화
+  const normalGroupsMap = {}
+  filteredNormal.forEach(s => {
+    if (!normalGroupsMap[s.time]) normalGroupsMap[s.time] = []
+    normalGroupsMap[s.time].push(s)
+  })
+  const normalEntries = Object.values(normalGroupsMap).map(items => {
+    if (items.length === 1) return { ...items[0], _type: 'normal' }
+    return {
+      _type: 'group',
+      id: `group-${items[0].time}`,
+      time: items[0].time,
+      items,
+      totalPrice: items.reduce((a, s) => a + s.totalPrice, 0),
+      totalQty: items.reduce((a, s) => a + s.qty, 0),
+    }
+  })
+
+  // merge and tag: normal sales get type:'normal'/'group', gacha get type:'gacha'
   const filtered = [
-    ...(typeFilter !== 'gacha' ? filteredNormal.map(s => ({ ...s, _type: 'normal' })) : []),
+    ...(typeFilter !== 'gacha' ? normalEntries : []),
     ...(typeFilter !== 'normal' ? filteredGacha.map(s => ({ ...s, _type: 'gacha' })) : []),
   ].sort((a, b) => new Date(b.time) - new Date(a.time))
 
@@ -231,7 +249,7 @@ export default function History() {
     if (!grouped[d]) grouped[d] = []
     grouped[d].push(s)
   })
-  const totalCount = filteredNormal.length + filteredGacha.length
+  const totalCount = normalEntries.length + filteredGacha.length
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
 
   const inputStyle = {
@@ -308,7 +326,7 @@ export default function History() {
         <div style={{ background: '#6366f1', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>{t('hist_total_revenue')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>{fmt(totalRevenue)}</div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{t('hist_regular')} {filteredNormal.length} · {t('hist_gacha')} {filteredGacha.length}</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{t('hist_regular')} {normalEntries.length} · {t('hist_gacha')} {filteredGacha.length}</div>
         </div>
         <div style={{ background: '#10b981', borderRadius: '14px', padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>{t('hist_total_profit')}</div>
@@ -396,8 +414,63 @@ export default function History() {
                           </div>
                         )}
                       </div>
+                    ) : s._type === 'group' ? (
+                      /* 한 결제 건에 여러 상품이 포함된 거래 행 */
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                              <span style={{ background: '#6366f1', color: '#fff', borderRadius: '6px', fontSize: '11px', fontWeight: '700', padding: '1px 7px' }}>{s.items.length}{t('pcs')}</span>
+                              <span style={{ fontSize: '15px', fontWeight: '500', color: '#1e293b' }}>
+                                {s.items[0].productName} {t('hist_and_more', s.items.length - 1)}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                              {new Date(s.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                              {' · '}{s.totalQty}{t('pcs')}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>
+                              {t('anal_profit')} {fmt(s.items.reduce((a, it) => a + (it.totalPrice - it.costPrice * it.qty), 0))}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                            {fmt(s.totalPrice)}
+                          </div>
+                        </div>
+                        {isOpen && (
+                          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }} onClick={e => e.stopPropagation()}>
+                            {s.items.map(it => (
+                              <div key={it.id} style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px 12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>{it.productName}</div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                                      {it.qty}{t('pcs')} × {fmt(it.unitPrice)}
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{fmt(it.totalPrice)}</div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                  <button
+                                    onClick={() => setEditSale(it)}
+                                    style={{ flex: 1, background: '#eef2ff', color: '#475569', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '12px', fontWeight: '600' }}
+                                  >
+                                    <Edit2 size={12} /> {t('edit')}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(it)}
+                                    style={{ flex: 1, background: '#fee2e2', color: '#ef4444', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '12px', fontWeight: '600' }}
+                                  >
+                                    <Trash2 size={12} /> {t('hist_cancel')}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      /* 일반 판매 행 */
+                      /* 일반 판매 행 (단일 상품) */
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div style={{ flex: 1 }}>
