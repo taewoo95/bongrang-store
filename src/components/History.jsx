@@ -43,7 +43,7 @@ function EditModal({ sale, onClose, onSaved }) {
     if (editMode === 'unit') {
       if (unitPrice <= 0) return alert('판매가를 확인해주세요.')
     } else {
-      if (totalPriceInput <= 0) return alert('전솨 금액을 확인해주세요.')
+      if (totalPriceInput <= 0) return alert('전체 금액을 확인해주세요.')
     }
     const finalTotal = editMode === 'unit' ? Number(qty) * Number(unitPrice) : Number(totalPriceInput)
     const finalUnitPrice = editMode === 'unit' ? Number(unitPrice) : finalTotal / Number(qty)
@@ -91,7 +91,7 @@ function EditModal({ sale, onClose, onSaved }) {
             <div style={{ display: 'flex', gap: '8px' }}>
               {[
                 { key: 'unit', label: '단가 수정' },
-                { key: 'total', label: '전솨금액 수정' },
+                { key: 'total', label: '전체금액 수정' },
               ].map(opt => (
                 <button
                   key={opt.key}
@@ -126,7 +126,7 @@ function EditModal({ sale, onClose, onSaved }) {
                 <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={inputStyle} min="1" />
               </div>
               <div>
-                <label style={labelStyle}>전솨 금액 (원)</label>
+                <label style={labelStyle}>전체 금액 (원)</label>
                 <input type="number" value={totalPriceInput} onChange={e => setTotalPriceInput(e.target.value)} style={inputStyle} />
               </div>
             </div>
