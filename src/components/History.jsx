@@ -164,13 +164,13 @@ export default function History() {
   const { t, fmt } = useLang()
   const [sales, setSales] = useState(getSales)
   const [gachaSales, setGachaSales] = useState(getGachaSales)
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
-  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
+  const [startDate, setStartDate] = useState(() => toLocalDate(new Date().toISOString()))
+  const [endDate, setEndDate] = useState(() => toLocalDate(new Date().toISOString()))
   const [editSale, setEditSale] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
   const [typeFilter, setTypeFilter] = useState('all') // 'all' | 'normal' | 'gacha'
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = toLocalDate(new Date().toISOString())
   const firstOfMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-01`
   const refresh = () => { setSales(getSales()); setGachaSales(getGachaSales()) }
 
