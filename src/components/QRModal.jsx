@@ -83,10 +83,27 @@ export function QRViewModal({ product, onClose }) {
 }
 
 // 스캔 성공 피드백: 진동(Android) + 비프음(진동이 막힌 기기 대비, 모든 기기)
+// 반환값: 'ok' 진동 호출 성공 | 'blocked' 브라우저가 진동을 거부 | 'unsupported' 진동 API 없음(iPhone 등)
 function scanFeedback(audioCtx, isIOS) {
-  if (!isIOS) {
-    // 짧은 진동은 일부 기기에서 무시되므로 충분히 길게, 패턴으로 호출
-    try { navigator.vibrate?.([120, 40, 120]) } catch (_) {}
+  let status = 'unsupported'
+  if (typeof navigator.vibrate === 'function') {
+    try {
+      // 짧은 진동은 일부 기기에서 무시되므로 충분히 길게, 패턴으로 호출
+      status = navigator.vibrate([120, 40, 120]) ? 'ok' : 'blocked'
+    } catch (_) { status = 'blocked' }
+  } else if (isIOS) {
+    // iOS 17.4+ Safari: 스위치형 체크박스 토글 시 시스템 햅틱이 울리는 방식 (지원 기기에서만 동작)
+    try {
+      const label = document.createElement('label')
+      label.style.cssText = 'position:fixed;left:-9999px;opacity:0;pointer-events:none'
+      const input = document.createElement('input')
+      input.type = 'checkbox'
+      input.setAttribute('switch', '')
+      label.appendChild(input)
+      document.body.appendChild(label)
+      label.click()
+      setTimeout(() => label.remove(), 100)
+    } catch (_) {}
   }
   if (audioCtx && audioCtx.state === 'running') {
     try {
@@ -99,6 +116,7 @@ function scanFeedback(audioCtx, isIOS) {
       osc.stop(audioCtx.currentTime + 0.12)
     } catch (_) {}
   }
+  return status
 }
 
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
@@ -107,6 +125,7 @@ export function QRScanModal({ cart, onScanned, onClose }) {
   const [error, setError] = useState(null)
   const [lastScannedName, setLastScannedName] = useState(null)
   const [flash, setFlash] = useState(false)
+  const [hapticStatus, setHapticStatus] = useState(null)
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -167,7 +186,7 @@ export function QRScanModal({ cart, onScanned, onClose }) {
                 // iOS/Android 모두 시각 번쩍임 제공
                 setFlash(true)
                 setTimeout(() => setFlash(false), 150)
-                scanFeedback(audioCtxRef.current, isIOS)
+                setHapticStatus(scanFeedback(audioCtxRef.current, isIOS))
               }
               setTimeout(() => { cooldownRef.current = false }, 1500)
             }
@@ -235,6 +254,13 @@ export function QRScanModal({ cart, onScanned, onClose }) {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', textAlign: 'center', marginBottom: cart.length > 0 ? '12px' : '0' }}>
               상품 QR 코드를 네모 안에 맞춰주세요
             </p>
+            {hapticStatus && (
+              <p style={{ color: hapticStatus === 'ok' ? '#6ee7b7' : '#fcd34d', fontSize: '12px', textAlign: 'center', marginBottom: '8px' }}>
+                {hapticStatus === 'ok' && '진동 신호 전송됨'}
+                {hapticStatus === 'blocked' && '진동이 브라우저/기기 설정에서 차단됨 · 소리와 깜빡임으로 알림'}
+                {hapticStatus === 'unsupported' && '이 브라우저는 진동 미지원 · 소리와 깜빡임으로 알림'}
+              </p>
+            )}
 
             {/* 장바구니 목록 */}
             {cart.length > 0 && (
