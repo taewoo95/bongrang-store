@@ -82,8 +82,28 @@ export function QRViewModal({ product, onClose }) {
   )
 }
 
+// 스캔 성공 피드백: 진동(Android) + 비프음(진동이 막힌 기기 대비, 모든 기기)
+function scanFeedback(audioCtx, isIOS) {
+  if (!isIOS) {
+    // 짧은 진동은 일부 기기에서 무시되므로 충분히 길게, 패턴으로 호출
+    try { navigator.vibrate?.([120, 40, 120]) } catch (_) {}
+  }
+  if (audioCtx && audioCtx.state === 'running') {
+    try {
+      const osc = audioCtx.createOscillator()
+      const gain = audioCtx.createGain()
+      osc.frequency.value = 1500
+      gain.gain.value = 0.2
+      osc.connect(gain).connect(audioCtx.destination)
+      osc.start()
+      osc.stop(audioCtx.currentTime + 0.12)
+    } catch (_) {}
+  }
+}
+
 // ── QR 스캔 (판매 입력에서 사용) ─────────────────────────────────
 export function QRScanModal({ cart, onScanned, onClose }) {
+  const audioCtxRef = useRef(null)
   const [error, setError] = useState(null)
   const [lastScannedName, setLastScannedName] = useState(null)
   const [flash, setFlash] = useState(false)
@@ -105,6 +125,13 @@ export function QRScanModal({ cart, onScanned, onClose }) {
 
   useEffect(() => {
     mountedRef.current = true
+
+    // 모달은 'QR 스캔' 버튼 클릭 직후 열리므로 이 시점에 만든 오디오/진동은 사용자 제스처로 허용됨
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext
+      if (Ctx) { audioCtxRef.current = new Ctx(); audioCtxRef.current.resume?.() }
+      if (!isIOS) navigator.vibrate?.(1)
+    } catch (_) {}
 
     const startCamera = async () => {
       try {
@@ -140,10 +167,7 @@ export function QRScanModal({ cart, onScanned, onClose }) {
                 // iOS/Android 모두 시각 번쩍임 제공
                 setFlash(true)
                 setTimeout(() => setFlash(false), 150)
-                // Android 햅틱: vibrate API 호출 (user gesture 정책 우회 위해 try-catch)
-                if (!isIOS) {
-                  try { navigator.vibrate?.(100) } catch (_) {}
-                }
+                scanFeedback(audioCtxRef.current, isIOS)
               }
               setTimeout(() => { cooldownRef.current = false }, 1500)
             }
@@ -161,6 +185,8 @@ export function QRScanModal({ cart, onScanned, onClose }) {
     return () => {
       mountedRef.current = false
       stopCamera()
+      audioCtxRef.current?.close?.().catch?.(() => {})
+      audioCtxRef.current = null
     }
   }, [])
 
