@@ -215,6 +215,7 @@ export default function Dashboard({ onNavigate }) {
           </button>
         </div>
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+        <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>빌드 {__BUILD_ID__}</div>
         {restoreMsg && (
           <div style={{ background: restoreMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#1e293b' }}>
             {restoreMsg}
