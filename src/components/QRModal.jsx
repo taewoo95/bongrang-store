@@ -254,6 +254,12 @@ export function QRScanModal({ cart, onScanned, onClose }) {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', textAlign: 'center', marginBottom: cart.length > 0 ? '12px' : '0' }}>
               상품 QR 코드를 네모 안에 맞춰주세요
             </p>
+            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <button
+                onClick={() => { try { navigator.vibrate?.([200, 80, 200]) } catch (_) {} }}
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: '8px', padding: '4px 12px', fontSize: '12px' }}
+              >진동 테스트 (카메라 켜진 상태)</button>
+            </div>
             {hapticStatus && (
               <p style={{ color: hapticStatus === 'ok' ? '#6ee7b7' : '#fcd34d', fontSize: '12px', textAlign: 'center', marginBottom: '8px' }}>
                 {hapticStatus === 'ok' && '진동 신호 전송됨'}

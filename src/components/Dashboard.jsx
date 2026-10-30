@@ -215,7 +215,13 @@ export default function Dashboard({ onNavigate }) {
           </button>
         </div>
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
-        <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>빌드 {__BUILD_ID__}</div>
+        <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>빌드 {__BUILD_ID__}</span>
+          <button
+            onClick={() => { try { alert(navigator.vibrate?.([200, 80, 200]) ? '진동 신호 전송됨 (폰이 울렸나요?)' : '진동 차단/미지원') } catch (_) { alert('진동 오류') } }}
+            style={{ background: '#f1f5f9', color: '#475569', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: '600' }}
+          >진동 테스트</button>
+        </div>
         {restoreMsg && (
           <div style={{ background: restoreMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#1e293b' }}>
             {restoreMsg}
