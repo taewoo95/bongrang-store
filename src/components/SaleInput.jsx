@@ -90,7 +90,9 @@ function GradeSettingsModal({ onClose }) {
 // ── 공통 상품 선택 UI (컴포넌트 외부 정의 — 내부 정의 시 매 렌더마다 remount) ──
 function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onAddGacha, fmt, t }) {
   const inCart = isGacha ? gachaCart.find(c => c.product.id === p.id) : cart.find(c => c.product.id === p.id)
-  const outOfStock = p.stock <= 0
+  const cartQty = inCart?.qty || 0
+  const effectiveStock = p.stock - cartQty  // 카트에 담긴 수량 제외한 실효 재고
+  const outOfStock = effectiveStock <= 0
   const disabled = outOfStock || (isGacha && gachaRemaining <= 0 && !inCart)
   return (
     <button
@@ -107,7 +109,7 @@ function ProductButton({ p, isGacha, cart, gachaCart, gachaRemaining, onAdd, onA
       <div>
         <div style={{ fontSize: '15px', fontWeight: '600', color: outOfStock ? '#94a3b8' : '#1e293b' }}>{p.name}</div>
         <div style={{ fontSize: '12px', color: outOfStock ? '#ef4444' : '#94a3b8', marginTop: '2px', fontWeight: outOfStock ? '600' : '400' }}>
-          {outOfStock ? (t ? t('prod_low_stock') : '재고 없음') : `${t ? t('sale_stock_label') : '재고'} ${p.stock}${t ? t('pcs') : '개'}`}
+          {outOfStock ? (t ? t('prod_low_stock') : '재고 없음') : `${t ? t('sale_stock_label') : '재고'} ${effectiveStock}${t ? t('pcs') : '개'}`}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -165,7 +167,8 @@ function ProductList({ isGacha, products, categories, activeCat, setActiveCat, c
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function SaleInput({ onDone }) {
   const { t, fmt } = useLang()
-  const [products] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+  const [products, setProducts] = useState(() => getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+  const refreshProducts = () => setProducts(getProducts().sort((a, b) => a.name.localeCompare(b.name, 'ko')))
   const [categories] = useState(getCategories)
   const [saleMode, setSaleMode] = useState('normal') // 'normal' | 'gacha'
 
@@ -217,6 +220,8 @@ export default function SaleInput({ onDone }) {
     }
     setCart(prev => {
       const exists = prev.find(c => c.product.id === product.id)
+      const currentQty = exists?.qty || 0
+      if (currentQty >= product.stock) return prev  // 재고 초과 방지
       if (exists) return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c)
       return [...prev, { product, qty: 1, discountPercent: 0 }]
     })
@@ -225,7 +230,9 @@ export default function SaleInput({ onDone }) {
   const updateQty = (productId, delta) => setCart(prev => prev.map(c => {
     if (c.product.id !== productId) return c
     const newQty = c.qty + delta
-    return newQty <= 0 ? null : { ...c, qty: newQty }
+    if (newQty <= 0) return null
+    if (delta > 0 && newQty > c.product.stock) return c  // 재고 초과 방지
+    return { ...c, qty: newQty }
   }).filter(Boolean))
   // 할인율(%)을 정가에 적용한 값이 실제 판매 단가 — 0~100% 범위로 고정
   const unitPriceOf = (c) => Math.round(c.product.sellPrice * (1 - (Number(c.discountPercent) || 0) / 100))
@@ -346,7 +353,7 @@ export default function SaleInput({ onDone }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button onClick={() => { setCart([]); setCartDiscountPercent(0); setSelectedIds(new Set()); setBulkDiscountInput(''); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
+          <button onClick={() => { refreshProducts(); setCart([]); setCartDiscountPercent(0); setSelectedIds(new Set()); setBulkDiscountInput(''); setDone(false); setDoneData(null) }} style={{ background: '#6366f1', color: '#fff', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>추가 판매 입력</button>
           <button onClick={onDone} style={{ background: '#f1f5f9', color: '#475569', borderRadius: '12px', padding: '14px 24px', fontSize: '15px', fontWeight: '600' }}>내역 보기</button>
         </div>
       </div>

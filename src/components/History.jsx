@@ -348,7 +348,8 @@ export default function History() {
             { label: '이번 주', fn: () => {
               const d = new Date(); const day = d.getDay()
               const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-              setStartDate(mon.toISOString().slice(0, 10)); setEndDate(today)
+              const pad = n => String(n).padStart(2, '0')
+              setStartDate(`${mon.getFullYear()}-${pad(mon.getMonth()+1)}-${pad(mon.getDate())}`); setEndDate(today)
             }, active: endDate === today && startDate !== today && startDate !== firstOfMonth },
             { label: '이번 달', fn: () => {
               const d = new Date()

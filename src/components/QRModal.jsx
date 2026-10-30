@@ -137,11 +137,12 @@ export function QRScanModal({ cart, onScanned, onClose }) {
               const name = onScanned(productId)
               if (mountedRef.current && name) {
                 setLastScannedName(name)
-                if (isIOS) {
-                  setFlash(true)
-                  setTimeout(() => setFlash(false), 150)
-                } else {
-                  navigator.vibrate?.(60)
+                // iOS/Android 모두 시각 번쩍임 제공
+                setFlash(true)
+                setTimeout(() => setFlash(false), 150)
+                // Android 햅틱: vibrate API 호출 (user gesture 정책 우회 위해 try-catch)
+                if (!isIOS) {
+                  try { navigator.vibrate?.(100) } catch (_) {}
                 }
               }
               setTimeout(() => { cooldownRef.current = false }, 1500)
